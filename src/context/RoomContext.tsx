@@ -1,14 +1,16 @@
+
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
-interface Room {
+export interface Room {
   id: string;
   name: string;
   type: "public" | "private";
   password?: string;
   isHost?: boolean;
+  tags?: string[];
 }
 
 interface RoomContextType {
@@ -16,6 +18,7 @@ interface RoomContextType {
   allRooms: Room[]; // All rooms in the "database"
   addRoom: (roomDetails: Omit<Room, 'id' | 'isHost'>) => Room;
   leaveRoom: (roomId: string) => void;
+  deleteRoom: (roomId: string) => void;
   getRoomById: (id: string) => Room | undefined;
   checkRoomPassword: (roomId: string, pass: string) => boolean;
   joinRoom: (room: Room) => void;
@@ -25,9 +28,11 @@ const RoomContext = createContext<RoomContextType | undefined>(undefined);
 
 // Mock database of all rooms
 const initialAllRooms: Room[] = [
-  { id: "a1b2c3", name: "Design Team", type: "public", isHost: true },
+  { id: "a1b2c3", name: "Design Team", type: "public", isHost: true, tags: ["work", "design"] },
   { id: "d4e5f6", name: "Dev Sync", type: "private", password: "password", isHost: false },
-  { id: "g7h8i9", name: "Project Phoenix", type: "public", isHost: false },
+  { id: "g7h8i9", name: "Project Phoenix", type: "public", isHost: false, tags: ["work", "dev"] },
+  { id: "j1k2l3", name: "Weekend Gamers", type: "public", isHost: false, tags: ["gaming", "fun"] },
+  { id: "m4n5o6", name: "Study Group", type: "public", isHost: false, tags: ["study", "education"] },
 ];
 
 // Initially, user has joined a subset of rooms
@@ -59,27 +64,31 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const leaveRoom = (roomId: string) => {
-    const roomToRemove = getRoomById(roomId);
-    if (roomToRemove?.isHost) {
-      // If host, delete the room from everywhere
-      setAllRooms((prev) => prev.filter((room) => room.id !== roomId));
-    }
-    // Always remove from joined list
     setRooms((prev) => prev.filter((room) => room.id !== roomId));
     router.push("/dashboard");
   };
 
+  const deleteRoom = (roomId: string) => {
+    // A host is deleting the room, remove from everywhere
+    setAllRooms((prev) => prev.filter((room) => room.id !== roomId));
+    setRooms((prev) => prev.filter((room) => room.id !== roomId));
+    router.push("/dashboard");
+  }
+
   const getRoomById = (id: string) => {
+    // Check joined rooms first to get correct isHost status
+    const joinedRoom = rooms.find((room) => room.id === id);
+    if (joinedRoom) return joinedRoom;
     return allRooms.find((room) => room.id === id);
   };
 
   const checkRoomPassword = (roomId: string, pass: string) => {
-    const room = getRoomById(roomId);
+    const room = allRooms.find((room) => room.id === id);
     return room?.type === 'private' && room.password === pass;
   }
 
   return (
-    <RoomContext.Provider value={{ rooms, allRooms, addRoom, leaveRoom, getRoomById, checkRoomPassword, joinRoom }}>
+    <RoomContext.Provider value={{ rooms, allRooms, addRoom, leaveRoom, deleteRoom, getRoomById, checkRoomPassword, joinRoom }}>
       {children}
     </RoomContext.Provider>
   );

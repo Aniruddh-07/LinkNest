@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -24,7 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Tag } from "lucide-react";
 import { useRooms } from "@/context/RoomContext";
 
 export function CreateRoom() {
@@ -32,6 +33,7 @@ export function CreateRoom() {
   const [roomName, setRoomName] = useState("");
   const [roomType, setRoomType] = useState<"public" | "private">("public");
   const [password, setPassword] = useState("");
+  const [tags, setTags] = useState("");
   const router = useRouter();
   const { addRoom } = useRooms();
 
@@ -44,12 +46,14 @@ export function CreateRoom() {
       name: roomName,
       type: roomType,
       password: roomType === 'private' ? password : undefined,
+      tags: roomType === 'public' ? tags.split(',').map(tag => tag.trim()).filter(Boolean) : undefined,
     });
     
     // Reset state and close dialog
     setRoomName("");
     setRoomType("public");
     setPassword("");
+    setTags("");
     setOpen(false);
 
     router.push(`/dashboard/rooms/${newRoom.id}`);
@@ -122,6 +126,22 @@ export function CreateRoom() {
                   required={roomType === "private"}
                   placeholder="••••••••"
                 />
+              </div>
+            )}
+             {roomType === "public" && (
+              <div className="space-y-2">
+                <Label htmlFor="tags">Tags (optional)</Label>
+                <div className="relative">
+                  <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="tags"
+                    value={tags}
+                    onChange={(e) => setTags(e.target.value)}
+                    placeholder="e.g. gaming, study, fun"
+                    className="pl-9"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">Separate tags with a comma.</p>
               </div>
             )}
           </div>

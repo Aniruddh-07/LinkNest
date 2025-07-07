@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -18,14 +19,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LinkNestIcon } from "./icons";
-import { LogOut, Moon, Settings, Sun, Users, MoreHorizontal, Trash2, Compass, DoorOpen } from "lucide-react";
+import { LogOut, Moon, Settings, Sun, Users, MoreHorizontal, Trash2, Compass, MinusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRooms } from "@/context/RoomContext";
 
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { rooms, leaveRoom } = useRooms();
+  const { rooms, leaveRoom, deleteRoom } = useRooms();
   const { setTheme } = useTheme();
 
   const handleLogout = () => {
@@ -74,12 +75,17 @@ export function Sidebar() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => leaveRoom(room.id)} className="cursor-pointer">
-                        {room.isHost ? <Trash2 className="mr-2 h-4 w-4 text-destructive" /> : <DoorOpen className="mr-2 h-4 w-4" />}
-                        <span className={cn(room.isHost && "text-destructive")}>
-                          {room.isHost ? 'Delete Room' : 'Leave Room'}
-                        </span>
-                      </DropdownMenuItem>
+                      {room.isHost ? (
+                        <DropdownMenuItem onClick={() => deleteRoom(room.id)} className="cursor-pointer text-destructive focus:text-destructive">
+                           <Trash2 className="mr-2 h-4 w-4" />
+                           <span>Delete Room</span>
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem onClick={() => leaveRoom(room.id)} className="cursor-pointer">
+                          <MinusCircle className="mr-2 h-4 w-4" />
+                          <span>Remove from list</span>
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                 </DropdownMenu>
               </div>

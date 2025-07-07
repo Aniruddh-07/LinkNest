@@ -1,3 +1,4 @@
+
 "use client";
 
 import { ParticipantList } from "@/components/room/participant-list";
@@ -6,14 +7,14 @@ import { FileShare } from "@/components/room/file-share";
 import { WalkieTalkie } from "@/components/room/walkie-talkie";
 import { Badge } from "@/components/ui/badge";
 import { useRooms } from "@/context/RoomContext";
-import { useRouter, useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { DoorOpen, Trash2 } from "lucide-react";
 
 export default function RoomPage() {
   const router = useRouter();
   const params = useParams<{ roomId: string }>();
-  const { getRoomById, leaveRoom } = useRooms();
+  const { getRoomById, leaveRoom, deleteRoom } = useRooms();
 
   const roomId = Array.isArray(params.roomId) ? params.roomId[0] : params.roomId;
   const room = getRoomById(roomId);
@@ -29,7 +30,7 @@ export default function RoomPage() {
 
   return (
     <div className="flex-1 space-y-6">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <h1 className="text-3xl font-bold tracking-tight">{roomName}</h1>
           <Badge
@@ -39,10 +40,25 @@ export default function RoomPage() {
             {roomId}
           </Badge>
         </div>
-        <Button variant="outline" onClick={() => leaveRoom(roomId)}>
-          {room.isHost ? <Trash2 className="mr-2 h-4 w-4" /> : <DoorOpen className="mr-2 h-4 w-4" />}
-          {room.isHost ? 'Delete Room' : 'Leave Room'}
-        </Button>
+        <div className="flex items-center gap-2">
+            {room.isHost && (
+                 <Button variant="outline" onClick={() => leaveRoom(roomId)}>
+                    <DoorOpen className="mr-2 h-4 w-4" />
+                    Leave Room
+                </Button>
+            )}
+            {room.isHost ? (
+                <Button variant="destructive" onClick={() => deleteRoom(roomId)}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Room
+                </Button>
+            ) : (
+                <Button variant="outline" onClick={() => leaveRoom(roomId)}>
+                    <DoorOpen className="mr-2 h-4 w-4" />
+                    Leave Room
+                </Button>
+            )}
+        </div>
       </div>
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">

@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { PlusCircle } from "lucide-react";
+import { useRooms } from "@/context/RoomContext";
 
 export function CreateRoom() {
   const [open, setOpen] = useState(false);
@@ -32,6 +33,7 @@ export function CreateRoom() {
   const [roomType, setRoomType] = useState<"public" | "private">("public");
   const [password, setPassword] = useState("");
   const router = useRouter();
+  const { addRoom } = useRooms();
 
   const handleCreateRoom = (e: FormEvent) => {
     e.preventDefault();
@@ -40,12 +42,8 @@ export function CreateRoom() {
 
     // Mock room creation logic
     const newRoomId = Math.random().toString(36).substring(2, 8).toLowerCase();
-    console.log("Creating room:", {
-      name: roomName,
-      type: roomType,
-      hasPassword: roomType === "private" && password.length > 0,
-      id: newRoomId,
-    });
+    
+    addRoom({ id: newRoomId, name: roomName });
     
     // Reset state and close dialog
     setRoomName("");

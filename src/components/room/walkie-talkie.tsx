@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mic, Video } from "lucide-react";
+import { Mic, ScreenShare, Video } from "lucide-react";
 
 export function WalkieTalkie() {
   return (
@@ -27,12 +27,21 @@ export function WalkieTalkie() {
                 <Video className="h-12 w-12 text-muted-foreground/50"/>
             </div>
           </div>
-          <Button
-            className="w-full h-12 group active:bg-primary/90"
-          >
-            <Mic className="mr-2 h-5 w-5 transition-transform group-active:scale-110" />
-            Push to Talk
-          </Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              className="w-full h-12 group active:bg-primary/90"
+            >
+              <Mic className="mr-2 h-5 w-5 transition-transform group-active:scale-110" />
+              Push to Talk
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full h-12"
+            >
+              <ScreenShare className="mr-2 h-5 w-5" />
+              Screen Share
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -3,10 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users } from "lucide-react";
 
 const participants = [
-  { name: "Alice", avatar: "https://placehold.co/40x40.png?text=A", hint: "woman smiling" },
-  { name: "Bob", avatar: "https://placehold.co/40x40.png?text=B", hint: "man portrait" },
-  { name: "Charlie", avatar: "https://placehold.co/40x40.png?text=C", hint: "person glasses" },
-  { name: "You", avatar: "https://placehold.co/40x40.png?text=Y", hint: "user avatar" },
+  { name: "Alice", avatar: "https://placehold.co/40x40.png", hint: "woman smiling" },
+  { name: "Bob", avatar: "https://placehold.co/40x40.png", hint: "man portrait" },
+  { name: "Charlie", avatar: "https://placehold.co/40x40.png", hint: "person glasses" },
+  { name: "You", avatar: "https://placehold.co/40x40.png", hint: "user avatar" },
 ];
 
 export function ParticipantList() {

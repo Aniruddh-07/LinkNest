@@ -6,14 +6,17 @@ import { FileShare } from "@/components/room/file-share";
 import { WalkieTalkie } from "@/components/room/walkie-talkie";
 import { Badge } from "@/components/ui/badge";
 import { useRooms } from "@/context/RoomContext";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { DoorOpen } from "lucide-react";
 
-export default function RoomPage({ params }: { params: { roomId: string } }) {
+export default function RoomPage() {
   const router = useRouter();
+  const params = useParams<{ roomId: string }>();
   const { getRoomById } = useRooms();
-  const room = getRoomById(params.roomId);
+
+  const roomId = Array.isArray(params.roomId) ? params.roomId[0] : params.roomId;
+  const room = getRoomById(roomId);
   const roomName = room ? room.name : "Room";
 
   return (
@@ -25,7 +28,7 @@ export default function RoomPage({ params }: { params: { roomId: string } }) {
             variant="outline"
             className="text-lg font-mono tracking-widest"
           >
-            {params.roomId}
+            {roomId}
           </Badge>
         </div>
         <Button variant="outline" onClick={() => router.push("/dashboard")}>

@@ -8,16 +8,24 @@ import { Badge } from "@/components/ui/badge";
 import { useRooms } from "@/context/RoomContext";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { DoorOpen } from "lucide-react";
+import { DoorOpen, Trash2 } from "lucide-react";
 
 export default function RoomPage() {
   const router = useRouter();
   const params = useParams<{ roomId: string }>();
-  const { getRoomById } = useRooms();
+  const { getRoomById, leaveRoom } = useRooms();
 
   const roomId = Array.isArray(params.roomId) ? params.roomId[0] : params.roomId;
   const room = getRoomById(roomId);
-  const roomName = room ? room.name : "Room";
+
+  if (!room) {
+    // Optionally, show a "Room not found" message or redirect
+    return <div className="flex-1 flex items-center justify-center">
+        <h1 className="text-2xl font-bold">Room not found.</h1>
+    </div>;
+  }
+
+  const roomName = room.name;
 
   return (
     <div className="flex-1 space-y-6">
@@ -31,9 +39,9 @@ export default function RoomPage() {
             {roomId}
           </Badge>
         </div>
-        <Button variant="outline" onClick={() => router.push("/dashboard")}>
-          <DoorOpen className="mr-2 h-4 w-4" />
-          Leave Room
+        <Button variant="outline" onClick={() => leaveRoom(roomId)}>
+          {room.isHost ? <Trash2 className="mr-2 h-4 w-4" /> : <DoorOpen className="mr-2 h-4 w-4" />}
+          {room.isHost ? 'Delete Room' : 'Leave Room'}
         </Button>
       </div>
       <div className="grid gap-6 lg:grid-cols-3">

@@ -40,10 +40,11 @@ export function CreateRoom() {
     if (!roomName.trim()) return;
     if (roomType === "private" && !password.trim()) return;
 
-    // Mock room creation logic
-    const newRoomId = Math.random().toString(36).substring(2, 8).toLowerCase();
-    
-    addRoom({ id: newRoomId, name: roomName });
+    const newRoom = addRoom({
+      name: roomName,
+      type: roomType,
+      password: roomType === 'private' ? password : undefined,
+    });
     
     // Reset state and close dialog
     setRoomName("");
@@ -51,7 +52,7 @@ export function CreateRoom() {
     setPassword("");
     setOpen(false);
 
-    router.push(`/dashboard/rooms/${newRoomId}`);
+    router.push(`/dashboard/rooms/${newRoom.id}`);
   };
 
   return (

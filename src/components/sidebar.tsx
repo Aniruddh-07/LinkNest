@@ -18,14 +18,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LinkNestIcon } from "./icons";
-import { LogOut, Moon, Settings, Sun, Users } from "lucide-react";
+import { LogOut, Moon, Settings, Sun, Users, MoreHorizontal, Trash2, Compass, DoorOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRooms } from "@/context/RoomContext";
 
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { rooms } = useRooms();
+  const { rooms, leaveRoom } = useRooms();
   const { setTheme } = useTheme();
 
   const handleLogout = () => {
@@ -46,23 +46,43 @@ export function Sidebar() {
       </div>
       <div className="flex-1 overflow-auto py-2">
         <nav className="grid items-start px-4 text-sm font-medium">
+          <Button variant="outline" className="mb-4" onClick={() => router.push('/dashboard/browse')}>
+            <Compass className="mr-2 h-4 w-4" />
+            Browse Public Rooms
+          </Button>
           <div className="px-3 py-2 text-xs font-semibold text-muted-foreground">
             Joined Rooms
           </div>
           {rooms.map((room) => {
             const isActive = pathname === `/dashboard/rooms/${room.id}`;
             return (
-              <Link
-                key={room.id}
-                href={`/dashboard/rooms/${room.id}`}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                  isActive && "bg-muted text-primary"
-                )}
-              >
-                <Users className="h-4 w-4" />
-                {room.name}
-              </Link>
+              <div key={room.id} className="flex items-center group">
+                 <Link
+                    href={`/dashboard/rooms/${room.id}`}
+                    className={cn(
+                      "flex-1 flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+                      isActive && "bg-muted text-primary"
+                    )}
+                  >
+                  <Users className="h-4 w-4" />
+                  <span className="truncate">{room.name}</span>
+                </Link>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 ml-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => leaveRoom(room.id)} className="cursor-pointer">
+                        {room.isHost ? <Trash2 className="mr-2 h-4 w-4 text-destructive" /> : <DoorOpen className="mr-2 h-4 w-4" />}
+                        <span className={cn(room.isHost && "text-destructive")}>
+                          {room.isHost ? 'Delete Room' : 'Leave Room'}
+                        </span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             );
           })}
         </nav>

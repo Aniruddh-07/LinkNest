@@ -11,7 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 export function WalkieTalkie() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const [hasCameraPermission, setHasCameraPermission] = useState(false);
+  const [hasCameraPermission, setHasCameraPermission] = useState(true); // Assume true until we know otherwise
   const [isCameraActive, setIsCameraActive] = useState(false);
   const { toast } = useToast();
 
@@ -27,7 +27,7 @@ export function WalkieTalkie() {
   }, []);
 
   const startCamera = useCallback(async () => {
-    if (isCameraActive) return;
+    if (streamRef.current) return; // Already running
 
     if (!navigator.mediaDevices?.getUserMedia) {
       toast({ variant: "destructive", title: "Unsupported Browser" });
@@ -52,7 +52,7 @@ export function WalkieTalkie() {
         description: "Please enable camera permissions to use this feature.",
       });
     }
-  }, [isCameraActive, toast]);
+  }, [toast]);
 
   const toggleCamera = () => {
     if (isCameraActive) {
@@ -62,8 +62,12 @@ export function WalkieTalkie() {
     }
   };
 
+  // This effect runs only once on component mount to request camera access.
+  // The dependency functions are stable, so this won't re-run and cause a loop.
   useEffect(() => {
     startCamera();
+
+    // Cleanup on unmount
     return () => {
       stopCamera();
     };
@@ -93,7 +97,7 @@ export function WalkieTalkie() {
             )}
           </div>
 
-          {!hasCameraPermission && !isCameraActive && (
+          {!hasCameraPermission && (
             <Alert variant="destructive">
               <AlertTitle>Camera Access Required</AlertTitle>
               <AlertDescription>

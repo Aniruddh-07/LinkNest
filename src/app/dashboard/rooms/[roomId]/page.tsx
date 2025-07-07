@@ -2,7 +2,7 @@
 "use client";
 
 import { ParticipantList } from "@/components/room/participant-list";
-import { MediaSync } from "@/components/room/media-sync";
+import { Stage } from "@/components/room/stage";
 import { FileShare } from "@/components/room/file-share";
 import { WalkieTalkie } from "@/components/room/walkie-talkie";
 import { Badge } from "@/components/ui/badge";
@@ -66,7 +66,7 @@ export default function RoomPage() {
       </div>
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-          <MediaSync />
+          <Stage />
           <FileShare />
         </div>
         <div className="lg:col-span-1 space-y-6">

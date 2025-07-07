@@ -4,45 +4,44 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mic, ScreenShare, Video, VideoOff } from "lucide-react";
+import { Mic, Video, VideoOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function WalkieTalkie() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState(false);
-  const [isCameraActive, setIsCameraActive] = useState(true);
+  const [isCameraActive, setIsCameraActive] = useState(false);
   const { toast } = useToast();
 
   const stopCamera = useCallback(() => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach((track) => track.stop());
-      videoRef.current.srcObject = null;
-      setIsCameraActive(false);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
     }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setIsCameraActive(false);
   }, []);
 
-  const getCameraPermission = useCallback(async () => {
+  const startCamera = useCallback(async () => {
+    if (isCameraActive) return;
+
     if (!navigator.mediaDevices?.getUserMedia) {
-      console.error("getUserMedia not supported on this browser");
-      toast({
-        variant: "destructive",
-        title: "Unsupported Browser",
-        description: "Your browser does not support camera access.",
-      });
+      toast({ variant: "destructive", title: "Unsupported Browser" });
       setHasCameraPermission(false);
-      setIsCameraActive(false);
       return;
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      setHasCameraPermission(true);
-      setIsCameraActive(true);
-
+      streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
+      setHasCameraPermission(true);
+      setIsCameraActive(true);
     } catch (error) {
       console.error("Error accessing camera:", error);
       setHasCameraPermission(false);
@@ -50,26 +49,26 @@ export function WalkieTalkie() {
       toast({
         variant: "destructive",
         title: "Camera Access Denied",
-        description:
-          "Please enable camera permissions in your browser settings to use this feature.",
+        description: "Please enable camera permissions to use this feature.",
       });
     }
-  }, [toast]);
+  }, [isCameraActive, toast]);
 
   const toggleCamera = () => {
     if (isCameraActive) {
       stopCamera();
     } else {
-      getCameraPermission();
+      startCamera();
     }
   };
 
   useEffect(() => {
-    getCameraPermission();
+    startCamera();
     return () => {
       stopCamera();
     };
-  }, [getCameraPermission, stopCamera]);
+  }, [startCamera, stopCamera]);
+
 
   return (
     <Card>
@@ -82,19 +81,19 @@ export function WalkieTalkie() {
           <div className="relative aspect-video w-full rounded-lg overflow-hidden bg-muted">
             <video
               ref={videoRef}
-              className="w-full h-full object-cover"
+              className={`w-full h-full object-cover ${isCameraActive ? 'block' : 'hidden'}`}
               autoPlay
               muted
               playsInline
             />
-            {(!hasCameraPermission || !isCameraActive) && (
+            {!isCameraActive && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                 <VideoOff className="h-12 w-12 text-muted-foreground/50" />
               </div>
             )}
           </div>
 
-          {!hasCameraPermission && (
+          {!hasCameraPermission && !isCameraActive && (
             <Alert variant="destructive">
               <AlertTitle>Camera Access Required</AlertTitle>
               <AlertDescription>
@@ -103,18 +102,14 @@ export function WalkieTalkie() {
             </Alert>
           )}
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <Button className="w-full h-12 group active:bg-primary/90">
               <Mic className="mr-2 h-5 w-5 transition-transform group-active:scale-110" />
               Push to Talk
             </Button>
             <Button variant="outline" className="w-full h-12" onClick={toggleCamera}>
               {isCameraActive ? <VideoOff className="mr-2 h-5 w-5" /> : <Video className="mr-2 h-5 w-5" />}
-              {isCameraActive ? "Stop" : "Start"} Cam
-            </Button>
-            <Button variant="outline" className="w-full h-12">
-              <ScreenShare className="mr-2 h-5 w-5" />
-              Screen Share
+              {isCameraActive ? "Stop Cam" : "Start Cam"}
             </Button>
           </div>
         </div>

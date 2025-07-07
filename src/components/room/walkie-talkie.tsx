@@ -1,11 +1,58 @@
 "use client";
 
-import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mic, ScreenShare, Video } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function WalkieTalkie() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [hasCameraPermission, setHasCameraPermission] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const getCameraPermission = async () => {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        console.error("getUserMedia not supported on this browser");
+        toast({
+          variant: "destructive",
+          title: "Unsupported Browser",
+          description: "Your browser does not support camera access.",
+        });
+        setHasCameraPermission(false);
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        setHasCameraPermission(true);
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (error) {
+        console.error("Error accessing camera:", error);
+        setHasCameraPermission(false);
+        toast({
+          variant: "destructive",
+          title: "Camera Access Denied",
+          description:
+            "Please enable camera permissions in your browser settings to use this feature.",
+        });
+      }
+    };
+
+    getCameraPermission();
+
+    return () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, [toast]);
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -15,29 +62,35 @@ export function WalkieTalkie() {
       <CardContent>
         <div className="space-y-4">
           <div className="relative aspect-video w-full rounded-lg overflow-hidden bg-muted">
-            <Image
-              src="https://placehold.co/600x400.png"
-              layout="fill"
-              objectFit="cover"
-              alt="Camera view placeholder"
-              data-ai-hint="webcam view"
-              className="opacity-50"
+            <video
+              ref={videoRef}
+              className="w-full h-full object-cover"
+              autoPlay
+              muted
+              playsInline
             />
-            <div className="absolute inset-0 flex items-center justify-center">
-                <Video className="h-12 w-12 text-muted-foreground/50"/>
-            </div>
+            {!hasCameraPermission && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                <Video className="h-12 w-12 text-muted-foreground/50" />
+              </div>
+            )}
           </div>
+
+          {!hasCameraPermission && (
+            <Alert variant="destructive">
+              <AlertTitle>Camera Access Required</AlertTitle>
+              <AlertDescription>
+                Please allow camera access to use this feature.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="grid grid-cols-2 gap-2">
-            <Button
-              className="w-full h-12 group active:bg-primary/90"
-            >
+            <Button className="w-full h-12 group active:bg-primary/90">
               <Mic className="mr-2 h-5 w-5 transition-transform group-active:scale-110" />
               Push to Talk
             </Button>
-            <Button
-              variant="outline"
-              className="w-full h-12"
-            >
+            <Button variant="outline" className="w-full h-12">
               <ScreenShare className="mr-2 h-5 w-5" />
               Screen Share
             </Button>

@@ -14,7 +14,7 @@ import { DoorOpen, Trash2 } from "lucide-react";
 export default function RoomPage() {
   const router = useRouter();
   const params = useParams<{ roomId: string }>();
-  const { getRoomById, leaveRoom, deleteRoom } = useRooms();
+  const { getRoomById, deleteRoom } = useRooms();
 
   const roomId = Array.isArray(params.roomId) ? params.roomId[0] : params.roomId;
   const room = getRoomById(roomId);
@@ -27,6 +27,10 @@ export default function RoomPage() {
   }
 
   const roomName = room.name;
+
+  const handleLeave = () => {
+    router.push('/dashboard');
+  }
 
   return (
     <div className="flex-1 space-y-6">
@@ -41,19 +45,19 @@ export default function RoomPage() {
           </Badge>
         </div>
         <div className="flex items-center gap-2">
-            {room.isHost && (
-                 <Button variant="outline" onClick={() => leaveRoom(roomId)}>
+            {room.isHost ? (
+              <>
+                <Button variant="outline" onClick={handleLeave}>
                     <DoorOpen className="mr-2 h-4 w-4" />
                     Leave Room
                 </Button>
-            )}
-            {room.isHost ? (
                 <Button variant="destructive" onClick={() => deleteRoom(roomId)}>
                     <Trash2 className="mr-2 h-4 w-4" />
                     Delete Room
                 </Button>
+              </>
             ) : (
-                <Button variant="outline" onClick={() => leaveRoom(roomId)}>
+                <Button variant="outline" onClick={handleLeave}>
                     <DoorOpen className="mr-2 h-4 w-4" />
                     Leave Room
                 </Button>

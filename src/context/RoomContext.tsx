@@ -17,7 +17,7 @@ interface RoomContextType {
   rooms: Room[]; // Rooms the user has joined
   allRooms: Room[]; // All rooms in the "database"
   addRoom: (roomDetails: Omit<Room, 'id' | 'isHost'>) => Room;
-  leaveRoom: (roomId: string) => void;
+  removeFromJoined: (roomId: string) => void;
   deleteRoom: (roomId: string) => void;
   getRoomById: (id: string) => Room | undefined;
   checkRoomPassword: (roomId: string, pass: string) => boolean;
@@ -63,7 +63,7 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
     router.push(`/dashboard/rooms/${room.id}`);
   };
 
-  const leaveRoom = (roomId: string) => {
+  const removeFromJoined = (roomId: string) => {
     setRooms((prev) => prev.filter((room) => room.id !== roomId));
     router.push("/dashboard");
   };
@@ -88,7 +88,7 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <RoomContext.Provider value={{ rooms, allRooms, addRoom, leaveRoom, deleteRoom, getRoomById, checkRoomPassword, joinRoom }}>
+    <RoomContext.Provider value={{ rooms, allRooms, addRoom, removeFromJoined, deleteRoom, getRoomById, checkRoomPassword, joinRoom }}>
       {children}
     </RoomContext.Provider>
   );

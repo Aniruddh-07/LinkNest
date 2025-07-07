@@ -26,7 +26,7 @@ import { useRooms } from "@/context/RoomContext";
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { rooms, leaveRoom, deleteRoom } = useRooms();
+  const { rooms, removeFromJoined, deleteRoom } = useRooms();
   const { setTheme } = useTheme();
 
   const handleLogout = () => {
@@ -81,7 +81,7 @@ export function Sidebar() {
                            <span>Delete Room</span>
                         </DropdownMenuItem>
                       ) : (
-                        <DropdownMenuItem onClick={() => leaveRoom(room.id)} className="cursor-pointer">
+                        <DropdownMenuItem onClick={() => removeFromJoined(room.id)} className="cursor-pointer">
                           <MinusCircle className="mr-2 h-4 w-4" />
                           <span>Remove from list</span>
                         </DropdownMenuItem>

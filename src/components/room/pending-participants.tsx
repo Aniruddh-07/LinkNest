@@ -4,14 +4,14 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useRooms, type PendingUser } from "@/context/RoomContext";
+import { type PendingUser } from "@/context/RoomContext";
 import { Check, UserPlus, X } from "lucide-react";
 
 
 interface PendingParticipantsProps {
   pendingUsers: PendingUser[];
-  onApprove: (name: string) => void;
-  onDecline: (name: string) => void;
+  onApprove: (email: string) => void;
+  onDecline: (email: string) => void;
 }
 
 export function PendingParticipants({ pendingUsers, onApprove, onDecline }: PendingParticipantsProps) {
@@ -30,18 +30,18 @@ export function PendingParticipants({ pendingUsers, onApprove, onDecline }: Pend
       </CardHeader>
       <CardContent className="space-y-3">
         {pendingUsers.map((user) => (
-          <div key={user.name} className="flex items-center gap-3">
+          <div key={user.email} className="flex items-center gap-3">
             <Avatar className="h-9 w-9">
               <AvatarImage src={user.avatar} data-ai-hint={user.hint} />
               <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
             </Avatar>
             <p className="font-medium flex-1 truncate">{user.name}</p>
             <div className="flex gap-2">
-              <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => onApprove(user.name)}>
+              <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => onApprove(user.email)}>
                 <Check className="h-4 w-4" />
                 <span className="sr-only">Accept</span>
               </Button>
-              <Button variant="destructive" size="icon" className="h-8 w-8 shrink-0" onClick={() => onDecline(user.name)}>
+              <Button variant="destructive" size="icon" className="h-8 w-8 shrink-0" onClick={() => onDecline(user.email)}>
                 <X className="h-4 w-4" />
                  <span className="sr-only">Decline</span>
               </Button>

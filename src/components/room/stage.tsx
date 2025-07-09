@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Youtube, Link, ScreenShare, UserSquare } from "lucide-react";
-import type { Participant } from "./participant-list";
+import type { Participant } from "@/context/RoomContext";
 import { useToast } from "@/hooks/use-toast";
 
 // --- Sub-components for different Stage modes ---
@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 const GalleryView = ({ participants }: { participants: Participant[] }) => (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 border rounded-lg bg-muted/40 h-full">
         {participants.map(p => (
-            <div key={p.name} className="relative aspect-video w-full rounded-lg overflow-hidden bg-muted">
+            <div key={p.email} className="relative aspect-video w-full rounded-lg overflow-hidden bg-muted">
                  <Image src="https://placehold.co/640x360.png" layout="fill" objectFit="cover" alt={`${p.name}'s video feed`} data-ai-hint="person video call" />
                  <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 rounded-md text-sm font-medium">{p.name}</div>
             </div>

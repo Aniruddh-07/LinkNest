@@ -44,6 +44,7 @@ export interface Friend {
 
 export interface Participant {
   name: string;
+  email: string;
   avatar: string;
   hint: string;
   isHost: boolean;
@@ -53,6 +54,7 @@ export interface Participant {
 
 export interface PendingUser {
   name: string;
+  email: string;
   avatar: string;
   hint: string;
 }
@@ -84,12 +86,12 @@ interface RoomContextType {
   removeFriend: (email: string) => void;
   participants: Record<string, Participant[]>;
   pendingUsers: Record<string, PendingUser[]>;
-  approveUser: (roomId: string, userName: string) => void;
-  declineUser: (roomId: string, userName: string) => void;
-  removeParticipant: (roomId: string, userName: string) => void;
-  toggleMute: (roomId: string, userName: string) => void;
-  toggleCamera: (roomId: string, userName: string) => void;
-  makeHost: (roomId: string, userName: string) => void;
+  approveUser: (roomId: string, userEmail: string) => void;
+  declineUser: (roomId: string, userEmail: string) => void;
+  removeParticipant: (roomId: string, userEmail: string) => void;
+  toggleMute: (roomId: string, userEmail: string) => void;
+  toggleCamera: (roomId: string, userEmail: string) => void;
+  makeHost: (roomId: string, userEmail: string) => void;
 }
 
 const RoomContext = createContext<RoomContextType | undefined>(undefined);
@@ -135,26 +137,26 @@ const initialFriends: Friend[] = [
 
 const initialParticipants: Record<string, Participant[]> = {
   "a1b2c3": [
-    { name: "You", avatar: "https://placehold.co/40x40.png", hint: "user avatar", isHost: true, isMuted: false, isCameraOff: false },
-    { name: "Alice", avatar: "https://placehold.co/40x40.png", hint: "woman smiling", isHost: false, isMuted: false, isCameraOff: false },
+    { name: "You", email: "user@example.com", avatar: "https://placehold.co/40x40.png", hint: "user avatar", isHost: true, isMuted: false, isCameraOff: false },
+    { name: "Alice", email: "alice@example.com", avatar: "https://placehold.co/40x40.png", hint: "woman smiling", isHost: false, isMuted: false, isCameraOff: false },
   ],
   "g7h8i9": [
-    { name: "You", avatar: "https://placehold.co/40x40.png", hint: "user avatar", isHost: true, isMuted: false, isCameraOff: false },
-    { name: "Bob", avatar: "https://placehold.co/40x40.png", hint: "man portrait", isHost: false, isMuted: true, isCameraOff: false },
-    { name: "Charlie", avatar: "https://placehold.co/40x40.png", hint: "person glasses", isHost: false, isMuted: false, isCameraOff: true },
+    { name: "You", email: "user@example.com", avatar: "https://placehold.co/40x40.png", hint: "user avatar", isHost: true, isMuted: false, isCameraOff: false },
+    { name: "Bob", email: "bob@example.com", avatar: "https://placehold.co/40x40.png", hint: "man portrait", isHost: false, isMuted: true, isCameraOff: false },
+    { name: "Charlie", email: "charlie@example.com", avatar: "https://placehold.co/40x40.png", hint: "person glasses", isHost: false, isMuted: false, isCameraOff: true },
   ],
   "j1k2l3": [
-    { name: "You", avatar: "https://placehold.co/40x40.png", hint: "user avatar", isHost: true, isMuted: false, isCameraOff: false },
+    { name: "You", email: "user@example.com", avatar: "https://placehold.co/40x40.png", hint: "user avatar", isHost: true, isMuted: false, isCameraOff: false },
   ],
   "d4e5f6": [ // joined private room
-    { name: "You", avatar: "https://placehold.co/40x40.png", hint: "user avatar", isHost: false, isMuted: false, isCameraOff: false },
+    { name: "You", email: "user@example.com", avatar: "https://placehold.co/40x40.png", hint: "user avatar", isHost: false, isMuted: false, isCameraOff: false },
   ],
 };
 
 const initialPendingUsers: Record<string, PendingUser[]> = {
   "a1b2c3": [
-    { name: "David", avatar: "https://placehold.co/40x40.png", hint: "man glasses" },
-    { name: "Eve", avatar: "https://placehold.co/40x40.png", hint: "woman smiling portrait" },
+    { name: "David", email: "david@example.com", avatar: "https://placehold.co/40x40.png", hint: "man glasses" },
+    { name: "Eve", email: "eve@example.com", avatar: "https://placehold.co/40x40.png", hint: "woman smiling portrait" },
   ]
 };
 
@@ -292,64 +294,62 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
     setFriends(prev => prev.filter(f => f.email !== email));
   }, []);
 
-  const approveUser = useCallback((roomId: string, userName: string) => {
-    setPendingUsers(prev => {
-      const roomPending = prev[roomId] || [];
-      const userToApprove = roomPending.find(u => u.name === userName);
-      if (!userToApprove) return prev;
+  const approveUser = useCallback((roomId: string, userEmail: string) => {
+    setPendingUsers(prevPending => {
+      const roomPending = prevPending[roomId] || [];
+      const userToApprove = roomPending.find(u => u.email === userEmail);
 
-      const newPending = { ...prev, [roomId]: roomPending.filter(u => u.name !== userName) };
-      
-      setParticipants(prevParts => {
-        const roomParticipants = prevParts[roomId] || [];
+      if (!userToApprove) {
+        return prevPending;
+      }
+
+      setParticipants(prevParticipants => {
+        const roomParticipants = prevParticipants[roomId] || [];
+        if (roomParticipants.some(p => p.email === userEmail)) {
+          return prevParticipants;
+        }
         const newParticipant: Participant = { ...userToApprove, isHost: false, isMuted: false, isCameraOff: false };
-        return { ...prevParts, [roomId]: [...roomParticipants, newParticipant] };
+        return { ...prevParticipants, [roomId]: [...roomParticipants, newParticipant] };
       });
 
-      return newPending;
+      return { ...prevPending, [roomId]: roomPending.filter(u => u.email !== userEmail) };
     });
   }, []);
 
-  const declineUser = useCallback((roomId: string, userName: string) => {
+  const declineUser = useCallback((roomId: string, userEmail: string) => {
     setPendingUsers(prev => ({
       ...prev,
-      [roomId]: (prev[roomId] || []).filter(u => u.name !== userName)
+      [roomId]: (prev[roomId] || []).filter(u => u.email !== userEmail)
     }));
   }, []);
 
-  const removeParticipant = useCallback((roomId: string, userName: string) => {
+  const removeParticipant = useCallback((roomId: string, userEmail: string) => {
     setParticipants(prev => ({
       ...prev,
-      [roomId]: (prev[roomId] || []).filter(p => p.name !== userName)
+      [roomId]: (prev[roomId] || []).filter(p => p.email !== userEmail)
     }));
   }, []);
 
-  const toggleMute = useCallback((roomId: string, userName: string) => {
+  const toggleMute = useCallback((roomId: string, userEmail: string) => {
     setParticipants(prev => ({
       ...prev,
-      [roomId]: (prev[roomId] || []).map(p => p.name === userName ? { ...p, isMuted: !p.isMuted } : p)
+      [roomId]: (prev[roomId] || []).map(p => p.email === userEmail ? { ...p, isMuted: !p.isMuted } : p)
     }));
   }, []);
 
-  const toggleCamera = useCallback((roomId: string, userName: string) => {
+  const toggleCamera = useCallback((roomId: string, userEmail: string) => {
     setParticipants(prev => ({
       ...prev,
-      [roomId]: (prev[roomId] || []).map(p => p.name === userName ? { ...p, isCameraOff: !p.isCameraOff } : p)
+      [roomId]: (prev[roomId] || []).map(p => p.email === userEmail ? { ...p, isCameraOff: !p.isCameraOff } : p)
     }));
   }, []);
 
-  const makeHost = useCallback((roomId: string, userName: string) => {
+  const makeHost = useCallback((roomId: string, userEmail: string) => {
     setParticipants(prev => ({
       ...prev,
-      [roomId]: (prev[roomId] || []).map(p => {
-        if(p.name === 'You' && p.isHost) {
-            // Demote current user if making another user a host
-             return { ...p, isHost: false };
-        }
-        if (p.isHost) return { ...p, isHost: false }; // Demote current host
-        if (p.name === userName) return { ...p, isHost: true }; // Promote new host
-        return p;
-      })
+      [roomId]: (prev[roomId] || []).map(p => 
+        p.email === userEmail ? { ...p, isHost: !p.isHost } : p
+      )
     }));
   }, []);
 

@@ -62,28 +62,28 @@ export default function RoomPage() {
     deleteRoom(roomId);
   }
 
-  const handleApprove = (name: string) => {
-    approveUser(roomId, name);
+  const handleApprove = (userEmail: string) => {
+    approveUser(roomId, userEmail);
   }
 
-  const handleDecline = (name: string) => {
-    declineUser(roomId, name);
+  const handleDecline = (userEmail: string) => {
+    declineUser(roomId, userEmail);
   }
 
-  const handleRemove = (name: string) => {
-    removeParticipant(roomId, name);
+  const handleRemove = (userEmail: string) => {
+    removeParticipant(roomId, userEmail);
   }
 
-  const handleToggleMute = (name: string) => {
-    toggleMute(roomId, name);
+  const handleToggleMute = (userEmail: string) => {
+    toggleMute(roomId, userEmail);
   }
   
-  const handleToggleCamera = (name: string) => {
-    toggleCamera(roomId, name);
+  const handleToggleCamera = (userEmail: string) => {
+    toggleCamera(roomId, userEmail);
   }
   
-  const handleMakeHost = (name: string) => {
-    makeHost(roomId, name);
+  const handleMakeHost = (userEmail: string) => {
+    makeHost(roomId, userEmail);
   }
 
   const handleFileDelete = (itemId: string) => {

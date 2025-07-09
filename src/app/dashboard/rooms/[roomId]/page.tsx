@@ -81,7 +81,16 @@ export default function RoomPage() {
   }
   
   const handleMakeHost = (name: string) => {
-    setParticipants(prev => prev.map(p => p.name === name ? { ...p, isHost: !p.isHost } : p));
+    setParticipants(prev => prev.map(p => {
+      // Demote current host if making another user a host
+      if(p.isHost) {
+        return { ...p, isHost: false };
+      }
+      if(p.name === name) {
+        return { ...p, isHost: true }
+      }
+      return p;
+    }));
   }
 
 
@@ -117,13 +126,13 @@ export default function RoomPage() {
         </div>
         <div className="lg:col-span-1 flex flex-col gap-6">
           {room.isHost && <PendingParticipants pendingUsers={pendingUsers} onApprove={handleApprove} onDecline={handleDecline} />}
-          <Tabs defaultValue="participants" className="w-full flex-1 flex flex-col">
+          <Tabs defaultValue="participants" className="w-full flex-1 flex flex-col min-h-0">
               <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="participants">Participants</TabsTrigger>
                   <TabsTrigger value="chat">Chat</TabsTrigger>
                   <TabsTrigger value="files">Files</TabsTrigger>
               </TabsList>
-              <TabsContent value="participants" className="flex-1 mt-6">
+              <TabsContent value="participants" className="flex-1 mt-6 overflow-y-auto">
                   <ParticipantList 
                     isHost={!!room.isHost} 
                     participants={participants}
@@ -133,10 +142,10 @@ export default function RoomPage() {
                     onMakeHost={handleMakeHost}
                   />
               </TabsContent>
-              <TabsContent value="chat" className="flex-1 mt-6">
+              <TabsContent value="chat" className="flex-1 mt-6 overflow-y-auto">
                   <Chat />
               </TabsContent>
-              <TabsContent value="files" className="flex-1 mt-6">
+              <TabsContent value="files" className="flex-1 mt-6 overflow-y-auto">
                   <FileShare />
               </TabsContent>
           </Tabs>
@@ -145,3 +154,4 @@ export default function RoomPage() {
     </div>
   );
 }
+

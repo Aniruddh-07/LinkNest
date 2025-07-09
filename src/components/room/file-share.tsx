@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, ChangeEvent } from "react";
@@ -35,7 +36,7 @@ export function FileShare() {
     }
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-lg font-medium">File Share</CardTitle>
         <Share2 className="h-5 w-5 text-muted-foreground" />
@@ -65,11 +66,11 @@ export function FileShare() {
           )}
 
           <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" disabled={!selectedFile || progress > 0 && progress < 100}>
+            <Button variant="outline" disabled={!selectedFile || (progress > 0 && progress < 100)}>
               <Share2 className="mr-2 h-4 w-4" />
               Torrent Share
             </Button>
-            <Button variant="outline" disabled={!selectedFile || progress > 0 && progress < 100}>
+            <Button variant="outline" disabled={!selectedFile || (progress > 0 && progress < 100)}>
               <Wifi className="mr-2 h-4 w-4" />
               Nearby Share
             </Button>

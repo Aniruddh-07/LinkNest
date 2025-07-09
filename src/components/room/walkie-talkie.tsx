@@ -7,16 +7,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mic, MicOff, Video, VideoOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useRooms } from "@/context/RoomContext";
+import { useParams } from "next/navigation";
 
 export function WalkieTalkie() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
   const [hasPermission, setHasPermission] = useState(true);
-  const [isCameraOn, setIsCameraOn] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
   
   const { toast } = useToast();
+  const params = useParams<{ roomId: string }>();
+  const { userProfile, participants, toggleMute, toggleCamera } = useRooms();
+
+  const roomId = params.roomId;
+  const me = participants[roomId]?.find(p => p.email === userProfile.email);
+
+  const isCameraOn = me ? !me.isCameraOff : false;
+  const isMuted = me ? me.isMuted : true;
 
   const stopMedia = useCallback(() => {
     if (streamRef.current) {
@@ -25,58 +33,63 @@ export function WalkieTalkie() {
     }
   }, []);
 
-  const getMedia = useCallback(async () => {
-    if (streamRef.current) return;
-    
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      streamRef.current = stream;
+  // This effect runs once to get permissions and media stream
+  useEffect(() => {
+    const getMedia = async () => {
+      if (streamRef.current) return;
       
-      // Mute audio by default
-      const audioTrack = stream.getAudioTracks()[0];
-      if (audioTrack) {
-          audioTrack.enabled = false;
-      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        streamRef.current = stream;
+        
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+        // The tracks will be enabled/disabled by the effect below based on context state
+        setHasPermission(true);
+
+      } catch (error) {
+        console.error("Error accessing media devices:", error);
+        setHasPermission(false);
+        stopMedia();
+        toast({
+          variant: "destructive",
+          title: "Permissions Denied",
+          description: "Please enable camera and microphone permissions in your browser settings.",
+        });
       }
-      setHasPermission(true);
-      setIsCameraOn(true);
-    } catch (error) {
-      console.error("Error accessing media devices:", error);
-      setHasPermission(false);
-      stopMedia();
-      toast({
-        variant: "destructive",
-        title: "Permissions Denied",
-        description: "Please enable camera and microphone permissions in your browser settings.",
-      });
-    }
+    };
+    
+    getMedia();
+    
+    return () => stopMedia();
   }, [toast, stopMedia]);
 
-  // Get media on mount and cleanup on unmount
+  // This effect syncs the media tracks with the state from context
   useEffect(() => {
-    getMedia();
-    return () => stopMedia();
-  }, [getMedia, stopMedia]);
-
-  const toggleCamera = () => {
     if (!streamRef.current) return;
+    
     const videoTrack = streamRef.current.getVideoTracks()[0];
     if (videoTrack) {
-      videoTrack.enabled = !videoTrack.enabled;
-      setIsCameraOn(videoTrack.enabled);
+      videoTrack.enabled = isCameraOn;
     }
-  };
-  
-  const toggleMute = () => {
-    if (!streamRef.current) return;
+
     const audioTrack = streamRef.current.getAudioTracks()[0];
     if (audioTrack) {
-      audioTrack.enabled = !audioTrack.enabled;
-      setIsMuted(!audioTrack.enabled);
+      audioTrack.enabled = !isMuted;
     }
+  }, [isCameraOn, isMuted]);
+
+  // Button handlers now just call the context functions
+  const handleToggleCamera = () => {
+    if (!me) return;
+    toggleCamera(roomId, userProfile.email);
+  };
+  
+  const handleToggleMute = () => {
+    if (!me) return;
+    toggleMute(roomId, userProfile.email);
   };
 
   return (
@@ -114,14 +127,19 @@ export function WalkieTalkie() {
           <div className="grid grid-cols-2 gap-2">
             <Button 
               className="w-full h-12"
-              onClick={toggleMute}
-              disabled={!hasPermission}
+              onClick={handleToggleMute}
+              disabled={!hasPermission || !me}
               variant={isMuted ? "outline" : "default"}
             >
               {isMuted ? <MicOff className="mr-2 h-5 w-5" /> : <Mic className="mr-2 h-5 w-5" />}
               {isMuted ? "Unmute Mic" : "Mute Mic"}
             </Button>
-            <Button variant="outline" className="w-full h-12" onClick={toggleCamera} disabled={!hasPermission}>
+            <Button 
+                variant="outline" 
+                className="w-full h-12" 
+                onClick={handleToggleCamera} 
+                disabled={!hasPermission || !me}
+            >
               {isCameraOn ? <VideoOff className="mr-2 h-5 w-5" /> : <Video className="mr-2 h-5 w-5" />}
               {isCameraOn ? "Stop Cam" : "Start Cam"}
             </Button>

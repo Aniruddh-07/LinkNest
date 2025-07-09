@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Youtube, Play, Pause, Link, Loader2, ScreenShare, UserSquare } from "lucide-react";
+import { Youtube, Link, ScreenShare, UserSquare } from "lucide-react";
 import type { Participant } from "./participant-list";
 import { useToast } from "@/hooks/use-toast";
 

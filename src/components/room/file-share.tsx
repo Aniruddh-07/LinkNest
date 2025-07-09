@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Paperclip, Share2, Wifi } from "lucide-react";
+import { Paperclip, Share2 } from "lucide-react";
 import { useRooms } from "@/context/RoomContext";
 import { useParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
@@ -96,17 +96,6 @@ export function FileShare() {
                 <Progress value={progress} />
              </div>
           )}
-
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" disabled={!selectedFile || (progress > 0 && progress < 100)}>
-              <Share2 className="mr-2 h-4 w-4" />
-              Torrent Share
-            </Button>
-            <Button variant="outline" disabled={!selectedFile || (progress > 0 && progress < 100)}>
-              <Wifi className="mr-2 h-4 w-4" />
-              Nearby Share
-            </Button>
-          </div>
         </div>
       </CardContent>
     </Card>

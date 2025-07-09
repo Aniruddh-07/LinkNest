@@ -122,6 +122,13 @@ export default function SettingsPage() {
         description: "The selected item has been removed.",
     });
   }
+  
+  const handleDownloadItem = (itemName: string) => {
+    toast({
+        title: "Download Started",
+        description: `"${itemName}" will begin downloading shortly.`,
+    });
+  }
 
   const handleAddFriend = (e: React.FormEvent) => {
     e.preventDefault();
@@ -329,7 +336,7 @@ export default function SettingsPage() {
                                 <TableCell className="text-muted-foreground">{format(item.date, "LLL dd, y")}</TableCell>
                                 <TableCell className="text-muted-foreground">{item.size}</TableCell>
                                 <TableCell className="text-right">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" disabled>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownloadItem(item.name)}>
                                         <Download className="h-4 w-4"/>
                                     </Button>
                                     <AlertDialog>

@@ -93,7 +93,7 @@ export function Stage() {
   }
 
   return (
-    <Card className="h-full flex flex-col">
+    <Card className="flex flex-col">
       <CardHeader>
         <CardTitle className="text-lg font-medium">Stage</CardTitle>
         <CardDescription>Main view for shared content and participants. Switch between views using the controls below.</CardDescription>

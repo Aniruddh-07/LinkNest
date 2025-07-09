@@ -10,6 +10,9 @@ import { useRooms } from "@/context/RoomContext";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { DoorOpen, Trash2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PendingParticipants } from "@/components/room/pending-participants";
+import { Chat } from "@/components/room/chat";
 
 export default function RoomPage() {
   const router = useRouter();
@@ -33,7 +36,7 @@ export default function RoomPage() {
   }
 
   return (
-    <div className="flex-1 space-y-6">
+    <div className="flex-1 flex flex-col space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <h1 className="text-3xl font-bold tracking-tight">{roomName}</h1>
@@ -45,33 +48,41 @@ export default function RoomPage() {
           </Badge>
         </div>
         <div className="flex items-center gap-2">
-            {room.isHost ? (
-              <>
-                <Button variant="outline" onClick={handleLeave}>
-                    <DoorOpen className="mr-2 h-4 w-4" />
-                    Leave Room
-                </Button>
+            <Button variant="outline" onClick={handleLeave}>
+                <DoorOpen className="mr-2 h-4 w-4" />
+                Leave Room
+            </Button>
+            {room.isHost && (
                 <Button variant="destructive" onClick={() => deleteRoom(roomId)}>
                     <Trash2 className="mr-2 h-4 w-4" />
                     Delete Room
                 </Button>
-              </>
-            ) : (
-                <Button variant="outline" onClick={handleLeave}>
-                    <DoorOpen className="mr-2 h-4 w-4" />
-                    Leave Room
-                </Button>
             )}
         </div>
       </div>
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid gap-6 lg:grid-cols-3 flex-1 min-h-0">
+        <div className="lg:col-span-2 space-y-6 flex flex-col">
           <Stage />
-          <FileShare />
-        </div>
-        <div className="lg:col-span-1 space-y-6">
-          <ParticipantList />
           <WalkieTalkie />
+        </div>
+        <div className="lg:col-span-1 flex flex-col gap-6">
+          {room.isHost && <PendingParticipants />}
+          <Tabs defaultValue="participants" className="w-full flex-1 flex flex-col">
+              <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="participants">Participants</TabsTrigger>
+                  <TabsTrigger value="chat">Chat</TabsTrigger>
+                  <TabsTrigger value="files">Files</TabsTrigger>
+              </TabsList>
+              <TabsContent value="participants" className="flex-1 mt-6">
+                  <ParticipantList isHost={room.isHost} />
+              </TabsContent>
+              <TabsContent value="chat" className="flex-1 mt-6">
+                  <Chat />
+              </TabsContent>
+              <TabsContent value="files" className="flex-1 mt-6">
+                  <FileShare />
+              </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>

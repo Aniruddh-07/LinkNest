@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
+import { useMemo, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,23 +19,121 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { LinkNestIcon } from "./icons";
-import { LogOut, Moon, Settings, Sun, Users, MoreHorizontal, Trash2, Compass, MinusCircle } from "lucide-react";
+import { LogOut, Moon, Settings, Sun, Users, MoreHorizontal, Trash2, Compass, MinusCircle, PlusCircle, Folder, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useRooms } from "@/context/RoomContext";
+import { useRooms, type Label as RoomLabel } from "@/context/RoomContext";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
 
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { rooms, removeFromJoined, deleteRoom, userProfile } = useRooms();
+  const { rooms, removeFromJoined, deleteRoom, userProfile, labels, addLabel, assignLabelToRoom, roomLabelAssignments } = useRooms();
   const { setTheme } = useTheme();
+
+  const [isLabelDialogOpen, setIsLabelDialogOpen] = useState(false);
+  const [newLabelName, setNewLabelName] = useState("");
 
   const handleLogout = () => {
     // Mock logout logic
     router.push("/");
   };
+  
+  const handleCreateLabel = () => {
+    if (newLabelName.trim()) {
+        addLabel(newLabelName.trim());
+        setNewLabelName("");
+        setIsLabelDialogOpen(false);
+    }
+  }
+
+  const categorizedRooms = useMemo(() => {
+    const labeled: Record<string, { label: RoomLabel; rooms: typeof rooms }> = {};
+    const unlabeled: typeof rooms = [];
+
+    labels.forEach(label => {
+        labeled[label.id] = { label, rooms: [] };
+    });
+
+    rooms.forEach(room => {
+        const labelId = roomLabelAssignments[room.id];
+        if (labelId && labeled[labelId]) {
+            labeled[labelId].rooms.push(room);
+        } else {
+            unlabeled.push(room);
+        }
+    });
+
+    const labeledRoomsArray = Object.values(labeled).filter(l => l.rooms.length > 0);
+
+    return { labeled: labeledRoomsArray, unlabeled };
+  }, [rooms, labels, roomLabelAssignments]);
+
+
+  const RoomItem = ({ room }: { room: typeof rooms[0] }) => {
+    const isActive = pathname === `/dashboard/rooms/${room.id}`;
+    return (
+      <div key={room.id} className="flex items-center group">
+        <Link
+            href={`/dashboard/rooms/${room.id}`}
+            className={cn(
+            "flex-1 flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+            isActive && "bg-muted text-primary"
+            )}
+        >
+        <Users className="h-4 w-4" />
+        <span className="truncate">{room.name}</span>
+        </Link>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8 ml-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                <MoreHorizontal className="h-4 w-4" />
+            </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+                <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>
+                        <Tag className="mr-2 h-4 w-4" />
+                        <span>Assign Label</span>
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuPortal>
+                        <DropdownMenuSubContent>
+                            {labels.map(label => (
+                                <DropdownMenuItem key={label.id} onClick={() => assignLabelToRoom(room.id, label.id)}>
+                                    <span>{label.name}</span>
+                                </DropdownMenuItem>
+                            ))}
+                            <DropdownMenuSeparator />
+                             <DropdownMenuItem onClick={() => assignLabelToRoom(room.id, null)}>
+                                <span>(Unassign)</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuSubContent>
+                    </DropdownMenuPortal>
+                </DropdownMenuSub>
+                <DropdownMenuSeparator />
+                {room.isHost ? (
+                    <DropdownMenuItem onClick={() => deleteRoom(room.id)} className="cursor-pointer text-destructive focus:text-destructive">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    <span>Delete Room</span>
+                    </DropdownMenuItem>
+                ) : (
+                    <DropdownMenuItem onClick={() => removeFromJoined(room.id)} className="cursor-pointer">
+                    <MinusCircle className="mr-2 h-4 w-4" />
+                    <span>Remove from list</span>
+                    </DropdownMenuItem>
+                )}
+            </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    )
+  }
 
   return (
+    <>
     <aside className="hidden w-64 flex-col border-r bg-background sm:flex">
       <div className="flex h-[60px] items-center border-b px-6">
         <Link
@@ -51,46 +150,61 @@ export function Sidebar() {
             <Compass className="mr-2 h-4 w-4" />
             Browse Public Rooms
           </Button>
-          <div className="px-3 py-2 text-xs font-semibold text-muted-foreground">
-            Joined Rooms
+
+          <div className="px-3 py-2 flex items-center justify-between">
+            <h3 className="text-xs font-semibold text-muted-foreground">LABELS</h3>
+            <Dialog open={isLabelDialogOpen} onOpenChange={setIsLabelDialogOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                        <PlusCircle className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[325px]">
+                    <DialogHeader>
+                        <DialogTitle>Create New Label</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Label htmlFor="label-name">Label Name</Label>
+                        <Input id="label-name" value={newLabelName} onChange={(e) => setNewLabelName(e.target.value)} />
+                    </div>
+                    <DialogFooter>
+                        <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
+                        <Button onClick={handleCreateLabel}>Create</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
           </div>
-          {rooms.map((room) => {
-            const isActive = pathname === `/dashboard/rooms/${room.id}`;
-            return (
-              <div key={room.id} className="flex items-center group">
-                 <Link
-                    href={`/dashboard/rooms/${room.id}`}
-                    className={cn(
-                      "flex-1 flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                      isActive && "bg-muted text-primary"
-                    )}
-                  >
-                  <Users className="h-4 w-4" />
-                  <span className="truncate">{room.name}</span>
-                </Link>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 ml-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      {room.isHost ? (
-                        <DropdownMenuItem onClick={() => deleteRoom(room.id)} className="cursor-pointer text-destructive focus:text-destructive">
-                           <Trash2 className="mr-2 h-4 w-4" />
-                           <span>Delete Room</span>
-                        </DropdownMenuItem>
-                      ) : (
-                        <DropdownMenuItem onClick={() => removeFromJoined(room.id)} className="cursor-pointer">
-                          <MinusCircle className="mr-2 h-4 w-4" />
-                          <span>Remove from list</span>
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            );
-          })}
+
+          <Accordion type="multiple" defaultValue={["unlabeled", ...labels.map(l => l.id)]} className="w-full">
+            {categorizedRooms.labeled.map(({ label, rooms }) => (
+              <AccordionItem value={label.id} key={label.id} className="border-b-0">
+                <AccordionTrigger className="py-1 hover:no-underline text-muted-foreground hover:text-primary [&[data-state=open]]:text-primary">
+                  <div className="flex items-center gap-2">
+                    <Folder className="h-4 w-4" />
+                    <span>{label.name}</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pl-2 pt-1 pb-0">
+                  {rooms.map(room => <RoomItem key={room.id} room={room} />)}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+            
+            {categorizedRooms.unlabeled.length > 0 && (
+                <AccordionItem value="unlabeled" className="border-b-0">
+                    <AccordionTrigger className="py-1 hover:no-underline text-muted-foreground hover:text-primary [&[data-state=open]]:text-primary">
+                        <div className="flex items-center gap-2">
+                        <Folder className="h-4 w-4" />
+                        <span>Uncategorized</span>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pl-2 pt-1 pb-0">
+                        {categorizedRooms.unlabeled.map(room => <RoomItem key={room.id} room={room} />)}
+                    </AccordionContent>
+                </AccordionItem>
+            )}
+          </Accordion>
+
         </nav>
       </div>
       <div className="mt-auto flex flex-col gap-2 p-4">
@@ -152,5 +266,6 @@ export function Sidebar() {
         </DropdownMenu>
       </div>
     </aside>
+    </>
   );
 }

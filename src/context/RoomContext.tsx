@@ -18,6 +18,11 @@ export interface UserProfile {
   email: string;
 }
 
+export interface Label {
+    id: string;
+    name: string;
+}
+
 interface RoomContextType {
   rooms: Room[]; // Rooms the user has joined
   allRooms: Room[]; // All rooms in the "database"
@@ -29,6 +34,10 @@ interface RoomContextType {
   joinRoom: (room: Room) => void;
   userProfile: UserProfile;
   updateUserProfile: (profile: UserProfile) => void;
+  labels: Label[];
+  addLabel: (name: string) => void;
+  roomLabelAssignments: Record<string, string>;
+  assignLabelToRoom: (roomId: string, labelId: string | null) => void;
 }
 
 const RoomContext = createContext<RoomContextType | undefined>(undefined);
@@ -43,11 +52,22 @@ const initialAllRooms: Room[] = [
 ];
 
 // Initially, user has joined a subset of rooms
-const initialJoinedRooms = initialAllRooms.filter(r => r.id === 'a1b2c3' || r.id === 'g7h8i9');
+const initialJoinedRooms = initialAllRooms.filter(r => r.id === 'a1b2c3' || r.id === 'g7h8i9' || r.id === 'j1k2l3');
 
 const initialUserProfile: UserProfile = {
   name: "User",
   email: "user@example.com",
+};
+
+const initialLabels: Label[] = [
+    { id: "lbl-1", name: "Work" },
+    { id: "lbl-2", name: "Fun" },
+]
+
+const initialAssignments: Record<string, string> = {
+    "a1b2c3": "lbl-1",
+    "g7h8i9": "lbl-1",
+    "j1k2l3": "lbl-2",
 };
 
 
@@ -56,6 +76,8 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
   const [allRooms, setAllRooms] = useState<Room[]>(initialAllRooms);
   const [rooms, setRooms] = useState<Room[]>(initialJoinedRooms); // Joined rooms
   const [userProfile, setUserProfile] = useState<UserProfile>(initialUserProfile);
+  const [labels, setLabels] = useState<Label[]>(initialLabels);
+  const [roomLabelAssignments, setRoomLabelAssignments] = useState<Record<string, string>>(initialAssignments);
 
   const addRoom = useCallback((roomDetails: Omit<Room, 'id' | 'isHost'>): Room => {
     const newRoom: Room = {
@@ -78,6 +100,12 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
 
   const removeFromJoined = (roomId: string) => {
     setRooms((prev) => prev.filter((room) => room.id !== roomId));
+    // Also remove from assignments
+    setRoomLabelAssignments(prev => {
+        const newAssignments = {...prev};
+        delete newAssignments[roomId];
+        return newAssignments;
+    });
     router.push("/dashboard");
   };
 
@@ -85,6 +113,11 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
     // A host is deleting the room, remove from everywhere
     setAllRooms((prev) => prev.filter((room) => room.id !== roomId));
     setRooms((prev) => prev.filter((room) => room.id !== roomId));
+    setRoomLabelAssignments(prev => {
+        const newAssignments = {...prev};
+        delete newAssignments[roomId];
+        return newAssignments;
+    });
     router.push("/dashboard");
   }
 
@@ -104,8 +137,44 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
     setUserProfile(profile);
   };
 
+  const addLabel = (name: string) => {
+    const newLabel: Label = {
+        id: `lbl-${Math.random().toString(36).substring(2, 8)}`,
+        name,
+    };
+    setLabels(prev => [...prev, newLabel]);
+  }
+
+  const assignLabelToRoom = (roomId: string, labelId: string | null) => {
+    setRoomLabelAssignments(prev => {
+        const newAssignments = {...prev};
+        if (labelId === null) {
+            delete newAssignments[roomId];
+        } else {
+            newAssignments[roomId] = labelId;
+        }
+        return newAssignments;
+    });
+  }
+
+
   return (
-    <RoomContext.Provider value={{ rooms, allRooms, addRoom, removeFromJoined, deleteRoom, getRoomById, checkRoomPassword, joinRoom, userProfile, updateUserProfile }}>
+    <RoomContext.Provider value={{ 
+        rooms, 
+        allRooms, 
+        addRoom, 
+        removeFromJoined, 
+        deleteRoom, 
+        getRoomById, 
+        checkRoomPassword, 
+        joinRoom, 
+        userProfile, 
+        updateUserProfile,
+        labels,
+        addLabel,
+        roomLabelAssignments,
+        assignLabelToRoom
+    }}>
       {children}
     </RoomContext.Provider>
   );

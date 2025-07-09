@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Youtube, Play, Pause, Link, Loader2, ScreenShare, UserSquare } from "lucide-react";
 import type { Participant } from "./participant-list";
+import { useToast } from "@/hooks/use-toast";
 
 // --- Sub-components for different Stage modes ---
 
@@ -67,6 +68,7 @@ export function Stage({ participants }: { participants: Participant[] }) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
   const isSharingScreen = !!screenStream;
+  const { toast } = useToast();
 
   const handleSync = (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,36 +93,39 @@ export function Stage({ participants }: { participants: Participant[] }) {
       }
   }, [screenStream]);
 
-  const startScreenShare = useCallback(async () => {
-      if (screenStream) return;
-      try {
-          const stream = await navigator.mediaDevices.getDisplayMedia({
-              video: true,
-              audio: false,
-          });
-          
-          stream.getVideoTracks()[0].addEventListener('ended', () => {
-              stopScreenShare();
-          });
-          
-          setScreenStream(stream);
-          setMode('screenshare');
 
-      } catch (err) {
-          console.error("Screen share error:", err);
-          setMode('gallery');
-      }
-  }, [screenStream, stopScreenShare]);
-
-  const handleToggleScreenShare = () => {
+  const handleToggleScreenShare = async () => {
     if (isSharingScreen) {
         stopScreenShare();
     } else {
-        startScreenShare();
+        try {
+            const stream = await navigator.mediaDevices.getDisplayMedia({
+                video: true,
+                audio: false,
+            });
+            
+            // Listen for the user to stop sharing from the browser's native UI
+            stream.getVideoTracks()[0].addEventListener('ended', () => {
+                stopScreenShare();
+            });
+            
+            setScreenStream(stream);
+            setMode('screenshare');
+
+        } catch (err) {
+            console.error("Screen share error:", err);
+            toast({
+                variant: "destructive",
+                title: "Screen Share Failed",
+                description: "Could not start screen sharing. Please ensure you have granted permission and try again.",
+            });
+            setMode('gallery');
+        }
     }
   }
 
   useEffect(() => {
+      // Cleanup effect to stop the stream when the component unmounts
       return () => {
           stopScreenShare();
       };

@@ -66,6 +66,8 @@ export function Stage({ participants }: { participants: Participant[] }) {
   const [mode, setMode] = useState<'gallery' | 'youtube' | 'screenshare'>('gallery');
   const [youtubeUrl, setYoutubeUrl] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  
+  const screenStreamRef = useRef<MediaStream | null>(null);
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
   const isSharingScreen = !!screenStream;
   const { toast } = useToast();
@@ -86,44 +88,53 @@ export function Stage({ participants }: { participants: Participant[] }) {
   }
 
   const stopScreenShare = useCallback(() => {
-      if (screenStream) {
-          screenStream.getTracks().forEach(track => track.stop());
-          setScreenStream(null);
-          setMode('gallery');
-      }
-  }, [screenStream]);
-
-  const startScreenShare = useCallback(async () => {
-    try {
-        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-        
-        // Listen for the user to stop sharing from the browser's native UI
-        stream.getVideoTracks()[0].addEventListener('ended', stopScreenShare);
-        
-        setScreenStream(stream);
-        setMode('screenshare');
-
-    } catch (err) {
-        console.error("Screen share error:", err);
-        toast({
-            variant: "destructive",
-            title: "Screen Share Failed",
-            description: "Could not start screen sharing. Please ensure you have granted permission and try again.",
-        });
-        setMode('gallery');
+    if (screenStreamRef.current) {
+        screenStreamRef.current.getTracks().forEach(track => track.stop());
+        screenStreamRef.current = null;
     }
-  }, [toast, stopScreenShare]);
+    setScreenStream(null);
+    setMode('gallery');
+  }, []);
 
-  const handleToggleScreenShare = () => {
+  const handleToggleScreenShare = async () => {
     if (isSharingScreen) {
         stopScreenShare();
     } else {
-        startScreenShare();
+        try {
+            const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+            
+            // Listen for when the user stops sharing via the browser's native UI
+            stream.getVideoTracks()[0].addEventListener('ended', () => {
+                stopScreenShare();
+            });
+            
+            screenStreamRef.current = stream;
+            setScreenStream(stream);
+            setMode('screenshare');
+        } catch (err) {
+            console.error("Screen share error:", err);
+            toast({
+                variant: "destructive",
+                title: "Screen Share Failed",
+                description: "Could not start screen sharing. Please ensure you have granted permission and try again.",
+            });
+            setMode('gallery');
+        }
     }
   };
 
+  const switchToGalleryView = () => {
+    if (isSharingScreen) {
+      stopScreenShare();
+    }
+    if (mode === 'youtube') {
+      setYoutubeUrl(null);
+      setMode('gallery');
+    }
+  };
+
+  // Cleanup effect to stop the stream when the component unmounts
   useEffect(() => {
-      // Cleanup effect to stop the stream when the component unmounts
       return () => {
           stopScreenShare();
       };
@@ -168,7 +179,7 @@ export function Stage({ participants }: { participants: Participant[] }) {
                     <ScreenShare className="mr-2 h-4 w-4" />
                     {isSharingScreen ? "Stop Sharing" : "Share Screen"}
                 </Button>
-                 <Button onClick={stopScreenShare} variant="outline" className="w-full sm:w-auto" disabled={mode === 'gallery'}>
+                 <Button onClick={switchToGalleryView} variant="outline" className="w-full sm:w-auto" disabled={mode === 'gallery'}>
                     <UserSquare className="mr-2 h-4 w-4" />
                     Gallery View
                 </Button>

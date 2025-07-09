@@ -6,9 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { User, FileText, Users, Download, Trash2, UserPlus, X, Image as ImageIcon, Video, MessageSquare, File as FileIcon, Calendar as CalendarIcon, FilterX } from "lucide-react";
+import { User, FileText, Users, Download, Trash2, UserPlus, X, Image as ImageIcon, Video, MessageSquare, File as FileIcon, Calendar as CalendarIcon, FilterX, Folder, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useRooms } from "@/context/RoomContext";
+import { useRooms, type Label as RoomLabel } from "@/context/RoomContext";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -18,6 +18,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 
 
 interface Friend {
@@ -62,7 +64,7 @@ const dataTypeIcons: Record<DataType, React.ElementType> = {
 
 export default function SettingsPage() {
   const { toast } = useToast();
-  const { userProfile, updateUserProfile, rooms: joinedRooms } = useRooms();
+  const { userProfile, updateUserProfile, rooms: joinedRooms, labels, updateLabel, deleteLabel } = useRooms();
 
   // Profile State
   const [name, setName] = useState(userProfile.name);
@@ -76,6 +78,12 @@ export default function SettingsPage() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [roomFilter, setRoomFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+
+  // Label Management State
+  const [isLabelEditDialogOpen, setIsLabelEditDialogOpen] = useState(false);
+  const [labelToEdit, setLabelToEdit] = useState<RoomLabel | null>(null);
+  const [editedLabelName, setEditedLabelName] = useState("");
+
 
   useEffect(() => {
     setName(userProfile.name);
@@ -157,6 +165,27 @@ export default function SettingsPage() {
     setDateRange(undefined);
     setRoomFilter("all");
     setTypeFilter("all");
+  }
+
+  const handleEditLabelClick = (label: RoomLabel) => {
+    setLabelToEdit(label);
+    setEditedLabelName(label.name);
+    setIsLabelEditDialogOpen(true);
+  }
+  
+  const handleSaveLabel = () => {
+    if (labelToEdit && editedLabelName.trim()) {
+      updateLabel(labelToEdit.id, editedLabelName.trim());
+      setIsLabelEditDialogOpen(false);
+      setLabelToEdit(null);
+      setEditedLabelName("");
+      toast({ title: "Label Updated" });
+    }
+  }
+
+  const handleDeleteLabel = (labelId: string) => {
+    deleteLabel(labelId);
+    toast({ title: "Label Deleted" });
   }
 
   const DataIcon = ({type}: {type: DataType}) => {
@@ -391,7 +420,82 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Folder /> Label Management
+            </CardTitle>
+            <CardDescription>
+              Edit or delete your custom room labels.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {labels.length > 0 ? (
+                labels.map(label => (
+                  <div key={label.id} className="flex items-center gap-4 group">
+                    <div className="flex-1">
+                      <p className="font-medium">{label.name}</p>
+                    </div>
+                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleEditLabelClick(label)}>
+                          <Edit className="h-4 w-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" size="icon" className="h-8 w-8">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will delete the label &quot;{label.name}&quot; and unassign it from all rooms. This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteLabel(label.id)}>Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center pt-4">You haven't created any labels yet.</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      <Dialog open={isLabelEditDialogOpen} onOpenChange={setIsLabelEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Label</DialogTitle>
+            <DialogDescription>
+              Rename your label below. Click save when you're done.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="edit-label-name">Label Name</Label>
+            <Input 
+              id="edit-label-name" 
+              value={editedLabelName} 
+              onChange={e => setEditedLabelName(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="ghost">Cancel</Button>
+            </DialogClose>
+            <Button onClick={handleSaveLabel}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

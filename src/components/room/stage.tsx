@@ -65,12 +65,12 @@ const ScreenShareView = ({ stream }: { stream: MediaStream | null }) => {
 export function Stage({ participants }: { participants: Participant[] }) {
   const [mode, setMode] = useState<'gallery' | 'youtube' | 'screenshare'>('gallery');
   const [youtubeUrl, setYoutubeUrl] = useState<string | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
   
   const screenStreamRef = useRef<MediaStream | null>(null);
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
-  const isSharingScreen = !!screenStream;
   const { toast } = useToast();
+  
+  const isSharingScreen = !!screenStream;
 
   const handleSync = (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,13 +78,23 @@ export function Stage({ participants }: { participants: Participant[] }) {
     const input = form.elements.namedItem('youtube-link') as HTMLInputElement;
     const link = input.value;
     if (!link) return;
-
-    setIsSyncing(true);
-    setTimeout(() => {
+    
+    const videoIdMatch = link.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=)?(?:embed\/)?(?:v\/)?(?:shorts\/)?([\w-]{11})(?:\S+)?/);
+    
+    if (videoIdMatch && videoIdMatch[1]) {
         setYoutubeUrl("https://placehold.co/1280x720.png"); 
         setMode('youtube');
-        setIsSyncing(false);
-    }, 1500)
+        toast({
+            title: "YouTube Video Synced",
+            description: "The video is now showing on the stage.",
+        });
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Invalid Link",
+            description: "Please paste a valid YouTube video link.",
+        });
+    }
   }
 
   const stopScreenShare = useCallback(() => {
@@ -96,32 +106,33 @@ export function Stage({ participants }: { participants: Participant[] }) {
     setMode('gallery');
   }, []);
 
-  const handleToggleScreenShare = async () => {
+  const handleToggleScreenShare = useCallback(async () => {
     if (isSharingScreen) {
-        stopScreenShare();
+      stopScreenShare();
     } else {
-        try {
-            const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-            
-            // Listen for when the user stops sharing via the browser's native UI
-            stream.getVideoTracks()[0].addEventListener('ended', () => {
-                stopScreenShare();
-            });
-            
-            screenStreamRef.current = stream;
-            setScreenStream(stream);
-            setMode('screenshare');
-        } catch (err) {
-            console.error("Screen share error:", err);
-            toast({
-                variant: "destructive",
-                title: "Screen Share Failed",
-                description: "Could not start screen sharing. Please ensure you have granted permission and try again.",
-            });
-            setMode('gallery');
-        }
+      try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+        
+        // Listen for when the user stops sharing via the browser's native UI
+        stream.getVideoTracks()[0].addEventListener('ended', () => {
+          stopScreenShare();
+        });
+        
+        screenStreamRef.current = stream;
+        setScreenStream(stream);
+        setMode('screenshare');
+      } catch (err) {
+        console.error("Screen share error:", err);
+        toast({
+          variant: "destructive",
+          title: "Screen Share Failed",
+          description: "Could not start screen sharing. Please ensure you have granted permission and try again.",
+        });
+        setMode('gallery');
+      }
     }
-  };
+  }, [isSharingScreen, stopScreenShare, toast]);
+
 
   const switchToGalleryView = () => {
     if (isSharingScreen) {
@@ -129,8 +140,8 @@ export function Stage({ participants }: { participants: Participant[] }) {
     }
     if (mode === 'youtube') {
       setYoutubeUrl(null);
-      setMode('gallery');
     }
+    setMode('gallery');
   };
 
   // Cleanup effect to stop the stream when the component unmounts
@@ -167,10 +178,10 @@ export function Stage({ participants }: { participants: Participant[] }) {
             <form onSubmit={handleSync} className="flex gap-2 flex-1">
                 <div className="relative flex-1">
                     <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input name="youtube-link" placeholder="Paste a YouTube video link to sync..." className="pl-9" disabled={isSyncing}/>
+                    <Input name="youtube-link" placeholder="Paste a YouTube video link to sync..." className="pl-9" />
                 </div>
-                <Button type="submit" disabled={isSyncing}>
-                    {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Youtube className="mr-2 h-4 w-4" />}
+                <Button type="submit">
+                    <Youtube className="mr-2 h-4 w-4" />
                     Sync
                 </Button>
             </form>

@@ -36,6 +36,8 @@ interface RoomContextType {
   updateUserProfile: (profile: UserProfile) => void;
   labels: Label[];
   addLabel: (name: string) => void;
+  updateLabel: (labelId: string, newName: string) => void;
+  deleteLabel: (labelId: string) => void;
   roomLabelAssignments: Record<string, string>;
   assignLabelToRoom: (roomId: string, labelId: string | null) => void;
 }
@@ -145,6 +147,24 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
     setLabels(prev => [...prev, newLabel]);
   }
 
+  const updateLabel = (labelId: string, newName: string) => {
+    setLabels(prev => prev.map(label => label.id === labelId ? { ...label, name: newName } : label));
+  };
+
+  const deleteLabel = (labelId: string) => {
+    setLabels(prev => prev.filter(label => label.id !== labelId));
+    // Unassign rooms that had this label
+    setRoomLabelAssignments(prev => {
+        const newAssignments = {...prev};
+        Object.keys(newAssignments).forEach(roomId => {
+            if (newAssignments[roomId] === labelId) {
+                delete newAssignments[roomId];
+            }
+        });
+        return newAssignments;
+    });
+  };
+
   const assignLabelToRoom = (roomId: string, labelId: string | null) => {
     setRoomLabelAssignments(prev => {
         const newAssignments = {...prev};
@@ -172,6 +192,8 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
         updateUserProfile,
         labels,
         addLabel,
+        updateLabel,
+        deleteLabel,
         roomLabelAssignments,
         assignLabelToRoom
     }}>

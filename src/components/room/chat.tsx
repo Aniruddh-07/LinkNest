@@ -21,7 +21,7 @@ interface Message {
 const initialMessages: Message[] = [
   { user: "Alice", text: "Hey everyone! 👋", avatar: "https://placehold.co/40x40.png", hint: "woman smiling" },
   { user: "Bob", text: "Hi Alice! What's up?", avatar: "https://placehold.co/40x40.png", hint: "man portrait" },
-  { user: "You", text: "Getting ready for the presentation. Ask the assistant to summarize our goals.", avatar: "https://placehold.co/40x40.png", hint: "user avatar" },
+  { user: "You", text: "Getting ready for the presentation. /a please summarize our goals.", avatar: "https://placehold.co/40x40.png", hint: "user avatar" },
 ];
 
 export function Chat() {
@@ -33,9 +33,11 @@ export function Chat() {
     e.preventDefault();
     if (!inputValue.trim() || isAssistantThinking) return;
 
+    const userMessageText = inputValue;
+
     const newMessage: Message = {
       user: "You",
-      text: inputValue,
+      text: userMessageText,
       avatar: "https://placehold.co/40x40.png",
       hint: "user avatar",
     };
@@ -44,32 +46,43 @@ export function Chat() {
     setMessages(updatedMessages);
     setInputValue("");
     
-    setIsAssistantThinking(true);
-    try {
-      const assistantInput = {
-        history: updatedMessages.map(m => ({ user: m.user, text: m.text })),
-      };
-      const response = await chatAssistant(assistantInput);
-      
-      const assistantMessage: Message = {
-        user: "Assistant",
-        text: response.reply,
-        avatar: "https://placehold.co/40x40.png",
-        hint: "robot assistant",
-      };
-      setMessages(prev => [...prev, assistantMessage]);
+    // Check if the message triggers the assistant
+    if (userMessageText.trim().toLowerCase().startsWith("/a")) {
+        setIsAssistantThinking(true);
+        try {
+          // Create a version of the history for the AI, stripping the command from the last message
+          const aiHistory = updatedMessages.map((m, index) => {
+              if (index === updatedMessages.length - 1) { // If it's the last message
+                  return { user: m.user, text: m.text.replace(/^\/a\s*/i, "") }; // Remove /a and leading space
+              }
+              return { user: m.user, text: m.text };
+          });
 
-    } catch (error) {
-      console.error("AI Assistant error:", error);
-      const errorMessage: Message = {
-        user: "Assistant",
-        text: "Sorry, I'm having trouble connecting. Please try again later.",
-        avatar: "https://placehold.co/40x40.png",
-        hint: "robot error",
-      };
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsAssistantThinking(false);
+          const assistantInput = {
+            history: aiHistory,
+          };
+          const response = await chatAssistant(assistantInput);
+          
+          const assistantMessage: Message = {
+            user: "Assistant",
+            text: response.reply,
+            avatar: "https://placehold.co/40x40.png",
+            hint: "robot assistant",
+          };
+          setMessages(prev => [...prev, assistantMessage]);
+
+        } catch (error) {
+          console.error("AI Assistant error:", error);
+          const errorMessage: Message = {
+            user: "Assistant",
+            text: "Sorry, I'm having trouble connecting. Please try again later.",
+            avatar: "https://placehold.co/40x40.png",
+            hint: "robot error",
+          };
+          setMessages(prev => [...prev, errorMessage]);
+        } finally {
+          setIsAssistantThinking(false);
+        }
     }
   };
 
@@ -116,7 +129,7 @@ export function Chat() {
         </ScrollArea>
         <form onSubmit={handleSendMessage} className="relative">
           <Input 
-            placeholder="Type a message..." 
+            placeholder="Type a message... (use /a to talk to AI)" 
             className="pr-20"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}

@@ -7,16 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Youtube, Play, Pause, Link, Loader2, ScreenShare, UserSquare } from "lucide-react";
+import type { Participant } from "./participant-list";
 
-// Mock data, same as participant-list
-const participants = [
-  { name: "Alice", avatar: "https://placehold.co/40x40.png", hint: "woman smiling" },
-  { name: "Bob", avatar: "https://placehold.co/40x40.png", hint: "man portrait" },
-  { name: "Charlie", avatar: "https://placehold.co/40x40.png", hint: "person glasses" },
-  { name: "You", avatar: "https://placehold.co/40x40.png", hint: "user avatar" },
-];
-
-const GalleryView = () => (
+const GalleryView = ({ participants }: { participants: Participant[] }) => (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 border rounded-lg bg-muted/40 h-full">
         {participants.map(p => (
             <div key={p.name} className="relative aspect-video w-full rounded-lg overflow-hidden bg-muted">
@@ -48,7 +41,7 @@ const ScreenShareView = () => (
 )
 
 
-export function Stage() {
+export function Stage({ participants }: { participants: Participant[] }) {
   const [mode, setMode] = useState<'gallery' | 'youtube' | 'screenshare'>('gallery');
   const [youtubeUrl, setYoutubeUrl] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -83,12 +76,12 @@ export function Stage() {
   const renderContent = () => {
       switch(mode) {
           case 'youtube':
-              return youtubeUrl ? <YouTubeView videoUrl={youtubeUrl} /> : <GalleryView />;
+              return youtubeUrl ? <YouTubeView videoUrl={youtubeUrl} /> : <GalleryView participants={participants} />;
           case 'screenshare':
               return <ScreenShareView />;
           case 'gallery':
           default:
-              return <GalleryView />;
+              return <GalleryView participants={participants} />;
       }
   }
 

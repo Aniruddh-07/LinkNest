@@ -6,12 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, UserPlus, X } from "lucide-react";
 
-const pendingUsers = [
-  { name: "David", avatar: "https://placehold.co/40x40.png", hint: "man glasses" },
-  { name: "Eve", avatar: "https://placehold.co/40x40.png", hint: "woman smiling portrait" },
-];
+export interface PendingUser {
+  name: string;
+  avatar: string;
+  hint: string;
+}
 
-export function PendingParticipants() {
+interface PendingParticipantsProps {
+  pendingUsers: PendingUser[];
+  onApprove: (name: string) => void;
+  onDecline: (name: string) => void;
+}
+
+export function PendingParticipants({ pendingUsers, onApprove, onDecline }: PendingParticipantsProps) {
   if (pendingUsers.length === 0) return null;
 
   return (
@@ -34,11 +41,11 @@ export function PendingParticipants() {
             </Avatar>
             <p className="font-medium flex-1 truncate">{user.name}</p>
             <div className="flex gap-2">
-              <Button variant="outline" size="icon" className="h-8 w-8 shrink-0">
+              <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => onApprove(user.name)}>
                 <Check className="h-4 w-4" />
                 <span className="sr-only">Accept</span>
               </Button>
-              <Button variant="destructive" size="icon" className="h-8 w-8 shrink-0">
+              <Button variant="destructive" size="icon" className="h-8 w-8 shrink-0" onClick={() => onDecline(user.name)}>
                 <X className="h-4 w-4" />
                  <span className="sr-only">Decline</span>
               </Button>

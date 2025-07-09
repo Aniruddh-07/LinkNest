@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquare, Send, Smile } from "lucide-react";
+import { MessageSquare, Send, Smile, Bot } from "lucide-react";
+import { chatAssistant } from "@/ai/flows/chat-assistant-flow";
 
 interface Message {
     user: string;
@@ -20,18 +21,17 @@ interface Message {
 const initialMessages: Message[] = [
   { user: "Alice", text: "Hey everyone! 👋", avatar: "https://placehold.co/40x40.png", hint: "woman smiling" },
   { user: "Bob", text: "Hi Alice! What's up?", avatar: "https://placehold.co/40x40.png", hint: "man portrait" },
-  { user: "You", text: "Getting ready for the presentation.", avatar: "https://placehold.co/40x40.png", hint: "user avatar" },
-  { user: "Charlie", text: "Same here. Good luck!", avatar: "https://placehold.co/40x40.png", hint: "person glasses" },
-  { user: "Alice", text: "You too! Let's nail this.", avatar: "https://placehold.co/40x40.png", hint: "woman smiling" },
+  { user: "You", text: "Getting ready for the presentation. Ask the assistant to summarize our goals.", avatar: "https://placehold.co/40x40.png", hint: "user avatar" },
 ];
 
 export function Chat() {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [inputValue, setInputValue] = useState("");
+  const [isAssistantThinking, setIsAssistantThinking] = useState(false);
 
-  const handleSendMessage = (e: FormEvent) => {
+  const handleSendMessage = async (e: FormEvent) => {
     e.preventDefault();
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() || isAssistantThinking) return;
 
     const newMessage: Message = {
       user: "You",
@@ -40,8 +40,37 @@ export function Chat() {
       hint: "user avatar",
     };
 
-    setMessages(prev => [...prev, newMessage]);
+    const updatedMessages = [...messages, newMessage];
+    setMessages(updatedMessages);
     setInputValue("");
+    
+    setIsAssistantThinking(true);
+    try {
+      const assistantInput = {
+        history: updatedMessages.map(m => ({ user: m.user, text: m.text })),
+      };
+      const response = await chatAssistant(assistantInput);
+      
+      const assistantMessage: Message = {
+        user: "Assistant",
+        text: response.reply,
+        avatar: "https://placehold.co/40x40.png",
+        hint: "robot assistant",
+      };
+      setMessages(prev => [...prev, assistantMessage]);
+
+    } catch (error) {
+      console.error("AI Assistant error:", error);
+      const errorMessage: Message = {
+        user: "Assistant",
+        text: "Sorry, I'm having trouble connecting. Please try again later.",
+        avatar: "https://placehold.co/40x40.png",
+        hint: "robot error",
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsAssistantThinking(false);
+    }
   };
 
   return (
@@ -60,11 +89,29 @@ export function Chat() {
                     <AvatarFallback>{msg.user.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className={`rounded-lg px-3 py-2 text-sm max-w-[80%] ${msg.user === 'You' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-                  {msg.user !== 'You' && <p className="font-semibold text-xs pb-1">{msg.user}</p>}
+                  {(msg.user !== 'You') && 
+                    <p className={`font-semibold text-xs pb-1 ${msg.user === 'Assistant' ? 'text-primary' : ''} flex items-center gap-1`}>
+                      {msg.user === 'Assistant' && <Bot className="h-3 w-3" />}
+                      {msg.user}
+                    </p>}
                   <p>{msg.text}</p>
                 </div>
               </div>
             ))}
+            {isAssistantThinking && (
+              <div className="flex items-start gap-3">
+                <Avatar className="h-9 w-9">
+                  <AvatarImage src="https://placehold.co/40x40.png" data-ai-hint="robot assistant" />
+                  <AvatarFallback>A</AvatarFallback>
+                </Avatar>
+                <div className="rounded-lg px-3 py-2 text-sm max-w-[80%] bg-muted">
+                  <p className="font-semibold text-xs pb-1 text-primary flex items-center gap-1"><Bot className="h-3 w-3" /> Assistant</p>
+                  <p className="flex items-center gap-1">
+                    <span className="animate-pulse">...</span>
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </ScrollArea>
         <form onSubmit={handleSendMessage} className="relative">
@@ -73,12 +120,13 @@ export function Chat() {
             className="pr-20"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
+            disabled={isAssistantThinking}
           />
           <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center">
-            <Button type="button" variant="ghost" size="icon" className="h-8 w-8">
+            <Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled>
               <Smile className="h-4 w-4" />
             </Button>
-            <Button type="submit" variant="ghost" size="icon" className="h-8 w-8">
+            <Button type="submit" variant="ghost" size="icon" className="h-8 w-8" disabled={isAssistantThinking}>
               <Send className="h-4 w-4" />
             </Button>
           </div>

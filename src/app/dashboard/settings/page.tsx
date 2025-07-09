@@ -1,10 +1,28 @@
+
+"use client";
+
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { User, FileText, Users } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function SettingsPage() {
+  const { toast } = useToast();
+  const [name, setName] = useState("User");
+  const [email, setEmail] = useState("user@example.com");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Mock saving logic
+    toast({
+      title: "Profile Saved",
+      description: "Your profile information has been updated.",
+    });
+  };
+
   return (
     <div className="flex-1 space-y-8">
       <div>
@@ -21,16 +39,27 @@ export default function SettingsPage() {
               <User /> Profile Settings
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" defaultValue="User" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" defaultValue="user@example.com" />
-            </div>
-            <Button>Save Changes</Button>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              <Button type="submit">Save Changes</Button>
+            </form>
           </CardContent>
         </Card>
 

@@ -4,20 +4,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mic, Video, VideoOff } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { cn } from "@/lib/utils";
 
 export function WalkieTalkie() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
 
   const [hasPermission, setHasPermission] = useState(true);
   const [isCameraOn, setIsCameraOn] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   
   const { toast } = useToast();
 
@@ -34,6 +31,13 @@ export function WalkieTalkie() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       streamRef.current = stream;
+      
+      // Mute audio by default
+      const audioTrack = stream.getAudioTracks()[0];
+      if (audioTrack) {
+          audioTrack.enabled = false;
+      }
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
@@ -65,46 +69,14 @@ export function WalkieTalkie() {
       setIsCameraOn(videoTrack.enabled);
     }
   };
-
-  const handleStartRecording = () => {
-    if (!streamRef.current || isRecording) return;
-    const audioTracks = streamRef.current.getAudioTracks();
-    if (audioTracks.length === 0) {
-      toast({ title: "Microphone is not available.", variant: "destructive" });
-      return;
+  
+  const toggleMute = () => {
+    if (!streamRef.current) return;
+    const audioTrack = streamRef.current.getAudioTracks()[0];
+    if (audioTrack) {
+      audioTrack.enabled = !audioTrack.enabled;
+      setIsMuted(!audioTrack.enabled);
     }
-
-    try {
-        mediaRecorderRef.current = new MediaRecorder(streamRef.current);
-
-        mediaRecorderRef.current.ondataavailable = (event) => {
-            if (event.data.size > 0) {
-                audioChunksRef.current.push(event.data);
-            }
-        };
-
-        mediaRecorderRef.current.onstop = () => {
-            const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-            const audioUrl = URL.createObjectURL(audioBlob);
-            const audio = new Audio(audioUrl);
-            audio.play();
-            audioChunksRef.current = [];
-        };
-
-        mediaRecorderRef.current.start();
-        setIsRecording(true);
-    } catch(e) {
-        console.error("Recording failed to start", e);
-        setIsRecording(false);
-        toast({ title: "Recording failed", description: "Could not start recording.", variant: "destructive" });
-    }
-  };
-
-  const handleStopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-        mediaRecorderRef.current.stop();
-    }
-    setIsRecording(false);
   };
 
   return (
@@ -141,15 +113,13 @@ export function WalkieTalkie() {
 
           <div className="grid grid-cols-2 gap-2">
             <Button 
-              className={cn("w-full h-12 group", isRecording && "bg-destructive hover:bg-destructive/90")}
-              onMouseDown={handleStartRecording}
-              onMouseUp={handleStopRecording}
-              onTouchStart={handleStartRecording}
-              onTouchEnd={handleStopRecording}
+              className="w-full h-12"
+              onClick={toggleMute}
               disabled={!hasPermission}
+              variant={isMuted ? "outline" : "default"}
             >
-              <Mic className="mr-2 h-5 w-5 transition-transform group-active:scale-110" />
-              {isRecording ? "Recording..." : "Push to Talk"}
+              {isMuted ? <MicOff className="mr-2 h-5 w-5" /> : <Mic className="mr-2 h-5 w-5" />}
+              {isMuted ? "Unmute Mic" : "Mute Mic"}
             </Button>
             <Button variant="outline" className="w-full h-12" onClick={toggleCamera} disabled={!hasPermission}>
               {isCameraOn ? <VideoOff className="mr-2 h-5 w-5" /> : <Video className="mr-2 h-5 w-5" />}

@@ -24,15 +24,16 @@ const GalleryView = ({ participants }: { participants: Participant[] }) => (
 );
 
 const YouTubeView = ({ videoUrl }: { videoUrl: string }) => {
-    const [isPlaying, setIsPlaying] = useState(false);
     return (
-        <div className="relative aspect-video w-full rounded-lg overflow-hidden bg-muted">
-            <Image src={videoUrl} layout="fill" objectFit="cover" alt="Video placeholder" data-ai-hint="youtube player" />
-            <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                <Button size="icon" variant="secondary" className="h-16 w-16 rounded-full" onClick={() => setIsPlaying(!isPlaying)}>
-                    {isPlaying ? <Pause className="h-8 w-8"/> : <Play className="h-8 w-8" />}
-                </Button>
-            </div>
+        <div className="relative aspect-video w-full rounded-lg overflow-hidden bg-black">
+            <iframe
+                className="absolute top-0 left-0 w-full h-full"
+                src={videoUrl}
+                title="YouTube video player"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+            ></iframe>
         </div>
     )
 }
@@ -82,7 +83,9 @@ export function Stage({ participants }: { participants: Participant[] }) {
     const videoIdMatch = link.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=)?(?:embed\/)?(?:v\/)?(?:shorts\/)?([\w-]{11})(?:\S+)?/);
     
     if (videoIdMatch && videoIdMatch[1]) {
-        setYoutubeUrl("https://placehold.co/1280x720.png"); 
+        const videoId = videoIdMatch[1];
+        const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`;
+        setYoutubeUrl(embedUrl); 
         setMode('youtube');
         toast({
             title: "YouTube Video Synced",
@@ -106,7 +109,7 @@ export function Stage({ participants }: { participants: Participant[] }) {
     setMode('gallery');
   }, []);
 
-  const handleToggleScreenShare = useCallback(async () => {
+  const handleToggleScreenShare = async () => {
     if (isSharingScreen) {
       stopScreenShare();
     } else {
@@ -114,9 +117,12 @@ export function Stage({ participants }: { participants: Participant[] }) {
         const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
         
         // Listen for when the user stops sharing via the browser's native UI
-        stream.getVideoTracks()[0].addEventListener('ended', () => {
-          stopScreenShare();
-        });
+        const videoTrack = stream.getVideoTracks()[0];
+        if (videoTrack) {
+          videoTrack.onended = () => {
+            stopScreenShare();
+          };
+        }
         
         screenStreamRef.current = stream;
         setScreenStream(stream);
@@ -131,8 +137,7 @@ export function Stage({ participants }: { participants: Participant[] }) {
         setMode('gallery');
       }
     }
-  }, [isSharingScreen, stopScreenShare, toast]);
-
+  };
 
   const switchToGalleryView = () => {
     if (isSharingScreen) {

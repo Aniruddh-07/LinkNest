@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageSquare, Send, Smile, Bot, Loader2 } from "lucide-react";
 import { chatAssistant } from "@/ai/flows/chat-assistant-flow";
+import { useParams } from "next/navigation";
+import { useRooms } from "@/context/RoomContext";
 
 interface Message {
     user: string;
@@ -28,6 +30,8 @@ export function Chat() {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [inputValue, setInputValue] = useState("");
   const [isAssistantThinking, setIsAssistantThinking] = useState(false);
+  const params = useParams<{ roomId: string }>();
+  const { getRoomById, addSharedItem } = useRooms();
 
   const handleSendMessage = async (e: FormEvent) => {
     e.preventDefault();
@@ -70,6 +74,19 @@ export function Chat() {
             hint: "robot assistant",
           };
           setMessages(prev => [...prev, assistantMessage]);
+
+          // Log the chat to data management
+          const room = getRoomById(params.roomId);
+          if (room) {
+            addSharedItem({
+              type: 'Chat',
+              name: `AI: ${response.reply.substring(0, 30)}...`,
+              room: room.name,
+              roomId: room.id,
+              date: new Date(),
+              size: '<1KB',
+            });
+          }
 
         } catch (error) {
           console.error("AI Assistant error:", error);

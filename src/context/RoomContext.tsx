@@ -23,6 +23,18 @@ export interface Label {
     name: string;
 }
 
+export type DataType = "Image" | "Video" | "File" | "Chat";
+
+export interface SharedData {
+    id: string;
+    type: DataType;
+    name: string;
+    room: string;
+    roomId: string;
+    date: Date;
+    size: string;
+}
+
 interface RoomContextType {
   rooms: Room[]; // Rooms the user has joined
   allRooms: Room[]; // All rooms in the "database"
@@ -40,6 +52,10 @@ interface RoomContextType {
   deleteLabel: (labelId: string) => void;
   roomLabelAssignments: Record<string, string>;
   assignLabelToRoom: (roomId: string, labelId: string | null) => void;
+  sharedData: SharedData[];
+  addSharedItem: (item: Omit<SharedData, 'id'>) => void;
+  deleteSharedItem: (itemId: string) => void;
+  deleteAllSharedData: () => void;
 }
 
 const RoomContext = createContext<RoomContextType | undefined>(undefined);
@@ -72,6 +88,12 @@ const initialAssignments: Record<string, string> = {
     "j1k2l3": "lbl-2",
 };
 
+const initialSharedData: SharedData[] = [
+    { id: "1", type: "Image", name: "moodboard.png", room: "Design Team", roomId: "a1b2c3", date: new Date(2024, 6, 10), size: "2.5MB" },
+    { id: "2", type: "Chat", name: "Chat History Excerpt", room: "Design Team", roomId: "a1b2c3", date: new Date(2024, 6, 10), size: "5KB" },
+    { id: "3", type: "File", name: "requirements.docx", room: "Project Phoenix", roomId: "g7h8i9", date: new Date(2024, 6, 8), size: "1.2MB" },
+];
+
 
 export const RoomProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
@@ -80,6 +102,7 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
   const [userProfile, setUserProfile] = useState<UserProfile>(initialUserProfile);
   const [labels, setLabels] = useState<Label[]>(initialLabels);
   const [roomLabelAssignments, setRoomLabelAssignments] = useState<Record<string, string>>(initialAssignments);
+  const [sharedData, setSharedData] = useState<SharedData[]>(initialSharedData);
 
   const addRoom = useCallback((roomDetails: Omit<Room, 'id' | 'isHost'>): Room => {
     const newRoom: Room = {
@@ -177,6 +200,22 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
     });
   }
 
+  const addSharedItem = useCallback((item: Omit<SharedData, 'id'>) => {
+    const newItem: SharedData = {
+      ...item,
+      id: Math.random().toString(36).substring(2, 8),
+    };
+    setSharedData(prev => [newItem, ...prev]);
+  }, []);
+
+  const deleteSharedItem = useCallback((itemId: string) => {
+    setSharedData(prev => prev.filter(item => item.id !== itemId));
+  }, []);
+
+  const deleteAllSharedData = useCallback(() => {
+    setSharedData([]);
+  }, []);
+
 
   return (
     <RoomContext.Provider value={{ 
@@ -195,7 +234,11 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
         updateLabel,
         deleteLabel,
         roomLabelAssignments,
-        assignLabelToRoom
+        assignLabelToRoom,
+        sharedData,
+        addSharedItem,
+        deleteSharedItem,
+        deleteAllSharedData
     }}>
       {children}
     </RoomContext.Provider>

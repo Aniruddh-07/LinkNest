@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { User, FileText, Users, Download, Trash2, UserPlus, X, Image as ImageIcon, Video, MessageSquare, File as FileIcon, Calendar as CalendarIcon, FilterX, Folder, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useRooms, type Label as RoomLabel } from "@/context/RoomContext";
+import { useRooms, type Label as RoomLabel, type SharedData, type DataType } from "@/context/RoomContext";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -34,26 +34,6 @@ const initialFriends: Friend[] = [
   { name: "Bob", email: "bob@example.com", avatar: "https://placehold.co/40x40.png", hint: "man portrait" },
 ];
 
-type DataType = "Image" | "Video" | "File" | "Chat";
-
-interface SharedData {
-    id: string;
-    type: DataType;
-    name: string;
-    room: string;
-    roomId: string;
-    date: Date;
-    size: string;
-}
-
-const mockSharedData: SharedData[] = [
-    { id: "1", type: "Image", name: "moodboard.png", room: "Design Team", roomId: "a1b2c3", date: new Date(2024, 6, 10), size: "2.5MB" },
-    { id: "2", type: "Chat", name: "Chat History Excerpt", room: "Design Team", roomId: "a1b2c3", date: new Date(2024, 6, 10), size: "5KB" },
-    { id: "3", type: "File", name: "requirements.docx", room: "Project Phoenix", roomId: "g7h8i9", date: new Date(2024, 6, 8), size: "1.2MB" },
-    { id: "4", type: "Video", name: "user-testing.mp4", room: "Design Team", roomId: "a1b2c3", date: new Date(2024, 6, 9), size: "128MB" },
-    { id: "5", type: "Image", name: "logo-final-v3.svg", room: "Design Team", roomId: "a1b2c3", date: new Date(2024, 6, 11), size: "150KB" },
-];
-
 const dataTypeIcons: Record<DataType, React.ElementType> = {
     Image: ImageIcon,
     Video: Video,
@@ -64,7 +44,12 @@ const dataTypeIcons: Record<DataType, React.ElementType> = {
 
 export default function SettingsPage() {
   const { toast } = useToast();
-  const { userProfile, updateUserProfile, rooms: joinedRooms, labels, updateLabel, deleteLabel } = useRooms();
+  const { 
+    userProfile, updateUserProfile, 
+    rooms: joinedRooms, 
+    labels, updateLabel, deleteLabel,
+    sharedData, deleteSharedItem, deleteAllSharedData
+  } = useRooms();
 
   // Profile State
   const [name, setName] = useState(userProfile.name);
@@ -92,7 +77,7 @@ export default function SettingsPage() {
 
 
   const filteredData = useMemo(() => {
-    return mockSharedData.filter(item => {
+    return sharedData.filter(item => {
         const date = new Date(item.date);
         const dateMatch = !dateRange || (
             (!dateRange.from || date >= dateRange.from) &&
@@ -102,7 +87,7 @@ export default function SettingsPage() {
         const typeMatch = typeFilter === 'all' || item.type === typeFilter;
         return dateMatch && roomMatch && typeMatch;
     });
-  }, [dateRange, roomFilter, typeFilter]);
+  }, [sharedData, dateRange, roomFilter, typeFilter]);
 
 
   const handleProfileSubmit = (e: React.FormEvent) => {
@@ -121,11 +106,20 @@ export default function SettingsPage() {
     });
   }
 
-  const handleDeleteData = () => {
+  const handleDeleteAllData = () => {
+    deleteAllSharedData();
     toast({
         variant: "destructive",
         title: "Data Deletion",
-        description: "Your selected data has been scheduled for deletion."
+        description: "All of your shared data has been deleted."
+    });
+  }
+
+  const handleDeleteSingleItem = (itemId: string) => {
+    deleteSharedItem(itemId);
+    toast({
+        title: "Item Deleted",
+        description: "The selected item has been removed.",
     });
   }
 
@@ -335,12 +329,26 @@ export default function SettingsPage() {
                                 <TableCell className="text-muted-foreground">{format(item.date, "LLL dd, y")}</TableCell>
                                 <TableCell className="text-muted-foreground">{item.size}</TableCell>
                                 <TableCell className="text-right">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" disabled>
                                         <Download className="h-4 w-4"/>
                                     </Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
-                                        <Trash2 className="h-4 w-4"/>
-                                    </Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                                                <Trash2 className="h-4 w-4"/>
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                <AlertDialogDescription>This action cannot be undone and will permanently delete this item.</AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleDeleteSingleItem(item.id)}>Delete</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                 </TableCell>
                             </TableRow>
                         )) : (
@@ -359,14 +367,30 @@ export default function SettingsPage() {
                     Clear Filters
                 </Button>
                 <div className="flex flex-wrap gap-4">
-                    <Button variant="outline" onClick={handleExport}>
+                    <Button variant="outline" onClick={handleExport} disabled={filteredData.length === 0}>
                         <Download className="mr-2 h-4 w-4" />
                         Export All
                     </Button>
-                    <Button variant="destructive" onClick={handleDeleteData}>
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete All
-                    </Button>
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive" disabled={filteredData.length === 0}>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete All
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete all of your shared data.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteAllData}>Continue</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </div>
             </div>
           </CardContent>

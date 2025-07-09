@@ -13,6 +13,11 @@ export interface Room {
   tags?: string[];
 }
 
+export interface UserProfile {
+  name: string;
+  email: string;
+}
+
 interface RoomContextType {
   rooms: Room[]; // Rooms the user has joined
   allRooms: Room[]; // All rooms in the "database"
@@ -22,6 +27,8 @@ interface RoomContextType {
   getRoomById: (id: string) => Room | undefined;
   checkRoomPassword: (roomId: string, pass: string) => boolean;
   joinRoom: (room: Room) => void;
+  userProfile: UserProfile;
+  updateUserProfile: (profile: UserProfile) => void;
 }
 
 const RoomContext = createContext<RoomContextType | undefined>(undefined);
@@ -38,11 +45,17 @@ const initialAllRooms: Room[] = [
 // Initially, user has joined a subset of rooms
 const initialJoinedRooms = initialAllRooms.filter(r => r.id === 'a1b2c3' || r.id === 'g7h8i9');
 
+const initialUserProfile: UserProfile = {
+  name: "User",
+  email: "user@example.com",
+};
+
 
 export const RoomProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
   const [allRooms, setAllRooms] = useState<Room[]>(initialAllRooms);
   const [rooms, setRooms] = useState<Room[]>(initialJoinedRooms); // Joined rooms
+  const [userProfile, setUserProfile] = useState<UserProfile>(initialUserProfile);
 
   const addRoom = useCallback((roomDetails: Omit<Room, 'id' | 'isHost'>): Room => {
     const newRoom: Room = {
@@ -87,8 +100,12 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
     return room?.type === 'private' && room.password === pass;
   }
 
+  const updateUserProfile = (profile: UserProfile) => {
+    setUserProfile(profile);
+  };
+
   return (
-    <RoomContext.Provider value={{ rooms, allRooms, addRoom, removeFromJoined, deleteRoom, getRoomById, checkRoomPassword, joinRoom }}>
+    <RoomContext.Provider value={{ rooms, allRooms, addRoom, removeFromJoined, deleteRoom, getRoomById, checkRoomPassword, joinRoom, userProfile, updateUserProfile }}>
       {children}
     </RoomContext.Provider>
   );

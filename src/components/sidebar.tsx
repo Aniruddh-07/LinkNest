@@ -26,7 +26,7 @@ import { useRooms } from "@/context/RoomContext";
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { rooms, removeFromJoined, deleteRoom } = useRooms();
+  const { rooms, removeFromJoined, deleteRoom, userProfile } = useRooms();
   const { setTheme } = useTheme();
 
   const handleLogout = () => {
@@ -106,12 +106,12 @@ export function Sidebar() {
                   alt="@user"
                   data-ai-hint="user avatar"
                 />
-                <AvatarFallback>U</AvatarFallback>
+                <AvatarFallback>{userProfile.name.charAt(0)}</AvatarFallback>
               </Avatar>
               <div className="text-left">
-                <p className="text-sm font-medium">User</p>
+                <p className="text-sm font-medium">{userProfile.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  user@example.com
+                  {userProfile.email}
                 </p>
               </div>
             </Button>

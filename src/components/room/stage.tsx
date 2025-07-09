@@ -1,13 +1,15 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Youtube, Play, Pause, Link, Loader2, ScreenShare, UserSquare } from "lucide-react";
 import type { Participant } from "./participant-list";
+
+// --- Sub-components for different Stage modes ---
 
 const GalleryView = ({ participants }: { participants: Participant[] }) => (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 border rounded-lg bg-muted/40 h-full">
@@ -34,18 +36,37 @@ const YouTubeView = ({ videoUrl }: { videoUrl: string }) => {
     )
 }
 
-const ScreenShareView = () => (
-    <div className="relative aspect-video w-full rounded-lg overflow-hidden bg-muted flex flex-col items-center justify-center">
-         <Image src="https://placehold.co/1280x720.png" layout="fill" objectFit="contain" alt="Screen share placeholder" data-ai-hint="desktop screen code" />
-    </div>
-)
+const ScreenShareView = ({ stream }: { stream: MediaStream | null }) => {
+    const videoRef = useRef<HTMLVideoElement>(null);
+
+    useEffect(() => {
+        if (videoRef.current && stream) {
+            videoRef.current.srcObject = stream;
+        }
+    }, [stream]);
+
+    return (
+        <div className="relative aspect-video w-full rounded-lg overflow-hidden bg-muted flex flex-col items-center justify-center">
+            {stream ? (
+                 <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-contain bg-black" />
+            ) : (
+                <div className="flex flex-col items-center justify-center text-muted-foreground">
+                    <ScreenShare className="h-16 w-16" />
+                    <p className="mt-4 font-semibold">Screen share is loading...</p>
+                    <p className="text-sm">Select a screen or window to share.</p>
+                </div>
+            )}
+        </div>
+    )
+}
 
 
 export function Stage({ participants }: { participants: Participant[] }) {
   const [mode, setMode] = useState<'gallery' | 'youtube' | 'screenshare'>('gallery');
   const [youtubeUrl, setYoutubeUrl] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [isSharingScreen, setIsSharingScreen] = useState(false);
+  const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
+  const isSharingScreen = !!screenStream;
 
   const handleSync = (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,29 +77,62 @@ export function Stage({ participants }: { participants: Participant[] }) {
 
     setIsSyncing(true);
     setTimeout(() => {
-        // In a real app, you'd validate the link and get video info
         setYoutubeUrl("https://placehold.co/1280x720.png"); 
         setMode('youtube');
         setIsSyncing(false);
     }, 1500)
   }
 
+  const stopScreenShare = useCallback(() => {
+      if (screenStream) {
+          screenStream.getTracks().forEach(track => track.stop());
+          setScreenStream(null);
+          setMode('gallery');
+      }
+  }, [screenStream]);
+
+  const startScreenShare = useCallback(async () => {
+      if (screenStream) return;
+      try {
+          const stream = await navigator.mediaDevices.getDisplayMedia({
+              video: true,
+              audio: false,
+          });
+          
+          stream.getVideoTracks()[0].addEventListener('ended', () => {
+              stopScreenShare();
+          });
+          
+          setScreenStream(stream);
+          setMode('screenshare');
+
+      } catch (err) {
+          console.error("Screen share error:", err);
+          setMode('gallery');
+      }
+  }, [screenStream, stopScreenShare]);
+
   const handleToggleScreenShare = () => {
-    const nextState = !isSharingScreen;
-    setIsSharingScreen(nextState);
-    if (nextState) {
-        setMode('screenshare');
+    if (isSharingScreen) {
+        stopScreenShare();
     } else {
-        setMode('gallery');
+        startScreenShare();
     }
   }
+
+  useEffect(() => {
+      return () => {
+          stopScreenShare();
+      };
+  }, [stopScreenShare]);
+
 
   const renderContent = () => {
       switch(mode) {
           case 'youtube':
               return youtubeUrl ? <YouTubeView videoUrl={youtubeUrl} /> : <GalleryView participants={participants} />;
           case 'screenshare':
-              return <ScreenShareView />;
+              return <ScreenShareView stream={screenStream} />;
           case 'gallery':
           default:
               return <GalleryView participants={participants} />;
@@ -111,7 +165,7 @@ export function Stage({ participants }: { participants: Participant[] }) {
                     <ScreenShare className="mr-2 h-4 w-4" />
                     {isSharingScreen ? "Stop Sharing" : "Share Screen"}
                 </Button>
-                 <Button onClick={() => setMode('gallery')} variant="outline" className="w-full sm:w-auto" disabled={mode === 'gallery'}>
+                 <Button onClick={() => { stopScreenShare(); setMode('gallery'); }} variant="outline" className="w-full sm:w-auto" disabled={mode === 'gallery'}>
                     <UserSquare className="mr-2 h-4 w-4" />
                     Gallery View
                 </Button>

@@ -42,6 +42,22 @@ export interface Friend {
   hint: string;
 }
 
+export interface Participant {
+  name: string;
+  avatar: string;
+  hint: string;
+  isHost: boolean;
+  isMuted: boolean;
+  isCameraOff: boolean;
+}
+
+export interface PendingUser {
+  name: string;
+  avatar: string;
+  hint: string;
+}
+
+
 interface RoomContextType {
   rooms: Room[]; // Rooms the user has joined
   allRooms: Room[]; // All rooms in the "database"
@@ -66,6 +82,14 @@ interface RoomContextType {
   friends: Friend[];
   addFriend: (friend: Friend) => void;
   removeFriend: (email: string) => void;
+  participants: Record<string, Participant[]>;
+  pendingUsers: Record<string, PendingUser[]>;
+  approveUser: (roomId: string, userName: string) => void;
+  declineUser: (roomId: string, userName: string) => void;
+  removeParticipant: (roomId: string, userName: string) => void;
+  toggleMute: (roomId: string, userName: string) => void;
+  toggleCamera: (roomId: string, userName: string) => void;
+  makeHost: (roomId: string, userName: string) => void;
 }
 
 const RoomContext = createContext<RoomContextType | undefined>(undefined);
@@ -109,6 +133,31 @@ const initialFriends: Friend[] = [
   { name: "Bob", email: "bob@example.com", avatar: "https://placehold.co/40x40.png", hint: "man portrait" },
 ];
 
+const initialParticipants: Record<string, Participant[]> = {
+  "a1b2c3": [
+    { name: "You", avatar: "https://placehold.co/40x40.png", hint: "user avatar", isHost: true, isMuted: false, isCameraOff: false },
+    { name: "Alice", avatar: "https://placehold.co/40x40.png", hint: "woman smiling", isHost: false, isMuted: false, isCameraOff: false },
+  ],
+  "g7h8i9": [
+    { name: "You", avatar: "https://placehold.co/40x40.png", hint: "user avatar", isHost: true, isMuted: false, isCameraOff: false },
+    { name: "Bob", avatar: "https://placehold.co/40x40.png", hint: "man portrait", isHost: false, isMuted: true, isCameraOff: false },
+    { name: "Charlie", avatar: "https://placehold.co/40x40.png", hint: "person glasses", isHost: false, isMuted: false, isCameraOff: true },
+  ],
+  "j1k2l3": [
+    { name: "You", avatar: "https://placehold.co/40x40.png", hint: "user avatar", isHost: true, isMuted: false, isCameraOff: false },
+  ],
+  "d4e5f6": [ // joined private room
+    { name: "You", avatar: "https://placehold.co/40x40.png", hint: "user avatar", isHost: false, isMuted: false, isCameraOff: false },
+  ],
+};
+
+const initialPendingUsers: Record<string, PendingUser[]> = {
+  "a1b2c3": [
+    { name: "David", avatar: "https://placehold.co/40x40.png", hint: "man glasses" },
+    { name: "Eve", avatar: "https://placehold.co/40x40.png", hint: "woman smiling portrait" },
+  ]
+};
+
 
 export const RoomProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
@@ -119,6 +168,8 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
   const [roomLabelAssignments, setRoomLabelAssignments] = useState<Record<string, string>>(initialAssignments);
   const [sharedData, setSharedData] = useState<SharedData[]>(initialSharedData);
   const [friends, setFriends] = useState<Friend[]>(initialFriends);
+  const [participants, setParticipants] = useState<Record<string, Participant[]>>(initialParticipants);
+  const [pendingUsers, setPendingUsers] = useState<Record<string, PendingUser[]>>(initialPendingUsers);
 
   const addRoom = useCallback((roomDetails: Omit<Room, 'id' | 'isHost'>): Room => {
     const newRoom: Room = {
@@ -241,6 +292,67 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
     setFriends(prev => prev.filter(f => f.email !== email));
   }, []);
 
+  const approveUser = useCallback((roomId: string, userName: string) => {
+    setPendingUsers(prev => {
+      const roomPending = prev[roomId] || [];
+      const userToApprove = roomPending.find(u => u.name === userName);
+      if (!userToApprove) return prev;
+
+      const newPending = { ...prev, [roomId]: roomPending.filter(u => u.name !== userName) };
+      
+      setParticipants(prevParts => {
+        const roomParticipants = prevParts[roomId] || [];
+        const newParticipant: Participant = { ...userToApprove, isHost: false, isMuted: false, isCameraOff: false };
+        return { ...prevParts, [roomId]: [...roomParticipants, newParticipant] };
+      });
+
+      return newPending;
+    });
+  }, []);
+
+  const declineUser = useCallback((roomId: string, userName: string) => {
+    setPendingUsers(prev => ({
+      ...prev,
+      [roomId]: (prev[roomId] || []).filter(u => u.name !== userName)
+    }));
+  }, []);
+
+  const removeParticipant = useCallback((roomId: string, userName: string) => {
+    setParticipants(prev => ({
+      ...prev,
+      [roomId]: (prev[roomId] || []).filter(p => p.name !== userName)
+    }));
+  }, []);
+
+  const toggleMute = useCallback((roomId: string, userName: string) => {
+    setParticipants(prev => ({
+      ...prev,
+      [roomId]: (prev[roomId] || []).map(p => p.name === userName ? { ...p, isMuted: !p.isMuted } : p)
+    }));
+  }, []);
+
+  const toggleCamera = useCallback((roomId: string, userName: string) => {
+    setParticipants(prev => ({
+      ...prev,
+      [roomId]: (prev[roomId] || []).map(p => p.name === userName ? { ...p, isCameraOff: !p.isCameraOff } : p)
+    }));
+  }, []);
+
+  const makeHost = useCallback((roomId: string, userName: string) => {
+    setParticipants(prev => ({
+      ...prev,
+      [roomId]: (prev[roomId] || []).map(p => {
+        if(p.name === 'You' && p.isHost) {
+            // Demote current user if making another user a host
+             return { ...p, isHost: false };
+        }
+        if (p.isHost) return { ...p, isHost: false }; // Demote current host
+        if (p.name === userName) return { ...p, isHost: true }; // Promote new host
+        return p;
+      })
+    }));
+  }, []);
+
 
   return (
     <RoomContext.Provider value={{ 
@@ -266,7 +378,15 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
         deleteAllSharedData,
         friends,
         addFriend,
-        removeFriend
+        removeFriend,
+        participants,
+        pendingUsers,
+        approveUser,
+        declineUser,
+        removeParticipant,
+        toggleMute,
+        toggleCamera,
+        makeHost
     }}>
       {children}
     </RoomContext.Provider>

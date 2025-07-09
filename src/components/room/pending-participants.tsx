@@ -4,13 +4,9 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useRooms, type PendingUser } from "@/context/RoomContext";
 import { Check, UserPlus, X } from "lucide-react";
 
-export interface PendingUser {
-  name: string;
-  avatar: string;
-  hint: string;
-}
 
 interface PendingParticipantsProps {
   pendingUsers: PendingUser[];

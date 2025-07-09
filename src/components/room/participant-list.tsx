@@ -3,16 +3,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useRooms, type Participant } from "@/context/RoomContext";
 import { Users, MoreHorizontal, Mic, MicOff, Video, VideoOff, ShieldCheck, UserX, ShieldQuestion } from "lucide-react";
 
-export interface Participant {
-  name: string;
-  avatar: string;
-  hint: string;
-  isHost: boolean;
-  isMuted: boolean;
-  isCameraOff: boolean;
-}
 
 interface ParticipantListProps {
   isHost?: boolean;

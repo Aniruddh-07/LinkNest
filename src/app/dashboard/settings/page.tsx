@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { User, FileText, Users, Download, Trash2, UserPlus, X, Image as ImageIcon, Video, MessageSquare, File as FileIcon, Calendar as CalendarIcon, FilterX, Folder, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useRooms, type Label as RoomLabel, type SharedData, type DataType } from "@/context/RoomContext";
+import { useRooms, type Label as RoomLabel, type SharedData, type DataType, type Friend } from "@/context/RoomContext";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -20,19 +20,6 @@ import type { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
-
-
-interface Friend {
-  name: string;
-  email: string;
-  avatar: string;
-  hint: string;
-}
-
-const initialFriends: Friend[] = [
-  { name: "Alice", email: "alice@example.com", avatar: "https://placehold.co/40x40.png", hint: "woman smiling" },
-  { name: "Bob", email: "bob@example.com", avatar: "https://placehold.co/40x40.png", hint: "man portrait" },
-];
 
 const dataTypeIcons: Record<DataType, React.ElementType> = {
     Image: ImageIcon,
@@ -48,7 +35,8 @@ export default function SettingsPage() {
     userProfile, updateUserProfile, 
     rooms: joinedRooms, 
     labels, updateLabel, deleteLabel,
-    sharedData, deleteSharedItem, deleteAllSharedData
+    sharedData, deleteSharedItem, deleteAllSharedData,
+    friends, addFriend, removeFriend
   } = useRooms();
 
   // Profile State
@@ -56,7 +44,6 @@ export default function SettingsPage() {
   const [email, setEmail] = useState(userProfile.email);
   
   // Friends State
-  const [friends, setFriends] = useState<Friend[]>(initialFriends);
   const [friendEmail, setFriendEmail] = useState("");
 
   // Data Management State
@@ -146,7 +133,7 @@ export default function SettingsPage() {
         avatar: "https://placehold.co/40x40.png",
         hint: "person avatar"
     }
-    setFriends(prev => [...prev, newFriend]);
+    addFriend(newFriend);
     setFriendEmail("");
     toast({
         title: "Friend Added",
@@ -155,7 +142,7 @@ export default function SettingsPage() {
   }
 
   const handleRemoveFriend = (emailToRemove: string) => {
-    setFriends(prev => prev.filter(f => f.email !== emailToRemove));
+    removeFriend(emailToRemove);
     toast({
         title: "Friend Removed",
         description: "The user has been removed from your friends list."

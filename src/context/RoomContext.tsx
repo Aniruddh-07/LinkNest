@@ -35,6 +35,13 @@ export interface SharedData {
     size: string;
 }
 
+export interface Friend {
+  name: string;
+  email: string;
+  avatar: string;
+  hint: string;
+}
+
 interface RoomContextType {
   rooms: Room[]; // Rooms the user has joined
   allRooms: Room[]; // All rooms in the "database"
@@ -56,6 +63,9 @@ interface RoomContextType {
   addSharedItem: (item: Omit<SharedData, 'id'>) => void;
   deleteSharedItem: (itemId: string) => void;
   deleteAllSharedData: () => void;
+  friends: Friend[];
+  addFriend: (friend: Friend) => void;
+  removeFriend: (email: string) => void;
 }
 
 const RoomContext = createContext<RoomContextType | undefined>(undefined);
@@ -94,6 +104,11 @@ const initialSharedData: SharedData[] = [
     { id: "3", type: "File", name: "requirements.docx", room: "Project Phoenix", roomId: "g7h8i9", date: new Date(2024, 6, 8), size: "1.2MB" },
 ];
 
+const initialFriends: Friend[] = [
+  { name: "Alice", email: "alice@example.com", avatar: "https://placehold.co/40x40.png", hint: "woman smiling" },
+  { name: "Bob", email: "bob@example.com", avatar: "https://placehold.co/40x40.png", hint: "man portrait" },
+];
+
 
 export const RoomProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
@@ -103,6 +118,7 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
   const [labels, setLabels] = useState<Label[]>(initialLabels);
   const [roomLabelAssignments, setRoomLabelAssignments] = useState<Record<string, string>>(initialAssignments);
   const [sharedData, setSharedData] = useState<SharedData[]>(initialSharedData);
+  const [friends, setFriends] = useState<Friend[]>(initialFriends);
 
   const addRoom = useCallback((roomDetails: Omit<Room, 'id' | 'isHost'>): Room => {
     const newRoom: Room = {
@@ -217,6 +233,14 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
     setSharedData([]);
   }, []);
 
+  const addFriend = useCallback((friend: Friend) => {
+    setFriends(prev => [...prev, friend]);
+  }, []);
+
+  const removeFriend = useCallback((email: string) => {
+    setFriends(prev => prev.filter(f => f.email !== email));
+  }, []);
+
 
   return (
     <RoomContext.Provider value={{ 
@@ -239,7 +263,10 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
         sharedData,
         addSharedItem,
         deleteSharedItem,
-        deleteAllSharedData
+        deleteAllSharedData,
+        friends,
+        addFriend,
+        removeFriend
     }}>
       {children}
     </RoomContext.Provider>

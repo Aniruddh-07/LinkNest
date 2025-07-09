@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { useRooms, type DataType } from "@/context/RoomContext";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { DoorOpen, Trash2, File as FileIcon, ImageIcon, Video as VideoIcon, MessageSquare } from "lucide-react";
+import { DoorOpen, Trash2, File as FileIcon, ImageIcon, Video as VideoIcon, MessageSquare, Download } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PendingParticipants, type PendingUser } from "@/components/room/pending-participants";
 import { Chat } from "@/components/room/chat";
@@ -117,6 +117,13 @@ export default function RoomPage() {
     });
   }
 
+  const handleDownloadItem = (itemName: string) => {
+    toast({
+        title: "Download Started",
+        description: `"${itemName}" will begin downloading shortly.`,
+    });
+  }
+
 
   return (
     <div className="flex-1 flex flex-col space-y-6">
@@ -185,16 +192,28 @@ export default function RoomPage() {
                                                 Shared on {format(item.date, "LLL dd, y")} &bull; {item.size}
                                             </p>
                                         </div>
-                                        {room.isHost && (
+                                        <div className="flex items-center ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
                                             <Button 
                                                 variant="ghost" 
                                                 size="icon" 
-                                                className="h-8 w-8 shrink-0 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                                                onClick={() => handleFileDelete(item.id)}
+                                                className="h-8 w-8 shrink-0"
+                                                onClick={() => handleDownloadItem(item.name)}
                                             >
-                                                <Trash2 className="h-4 w-4" />
+                                                <Download className="h-4 w-4" />
+                                                <span className="sr-only">Download</span>
                                             </Button>
-                                        )}
+                                            {room.isHost && (
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    className="h-8 w-8 shrink-0 text-destructive hover:text-destructive"
+                                                    onClick={() => handleFileDelete(item.id)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                    <span className="sr-only">Delete</span>
+                                                </Button>
+                                            )}
+                                        </div>
                                     </div>
                                 ))}
                             </div>

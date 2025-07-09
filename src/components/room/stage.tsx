@@ -93,36 +93,34 @@ export function Stage({ participants }: { participants: Participant[] }) {
       }
   }, [screenStream]);
 
+  const startScreenShare = useCallback(async () => {
+    try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+        
+        // Listen for the user to stop sharing from the browser's native UI
+        stream.getVideoTracks()[0].addEventListener('ended', stopScreenShare);
+        
+        setScreenStream(stream);
+        setMode('screenshare');
 
-  const handleToggleScreenShare = async () => {
+    } catch (err) {
+        console.error("Screen share error:", err);
+        toast({
+            variant: "destructive",
+            title: "Screen Share Failed",
+            description: "Could not start screen sharing. Please ensure you have granted permission and try again.",
+        });
+        setMode('gallery');
+    }
+  }, [toast, stopScreenShare]);
+
+  const handleToggleScreenShare = () => {
     if (isSharingScreen) {
         stopScreenShare();
     } else {
-        try {
-            const stream = await navigator.mediaDevices.getDisplayMedia({
-                video: true,
-                audio: false,
-            });
-            
-            // Listen for the user to stop sharing from the browser's native UI
-            stream.getVideoTracks()[0].addEventListener('ended', () => {
-                stopScreenShare();
-            });
-            
-            setScreenStream(stream);
-            setMode('screenshare');
-
-        } catch (err) {
-            console.error("Screen share error:", err);
-            toast({
-                variant: "destructive",
-                title: "Screen Share Failed",
-                description: "Could not start screen sharing. Please ensure you have granted permission and try again.",
-            });
-            setMode('gallery');
-        }
+        startScreenShare();
     }
-  }
+  };
 
   useEffect(() => {
       // Cleanup effect to stop the stream when the component unmounts
@@ -170,7 +168,7 @@ export function Stage({ participants }: { participants: Participant[] }) {
                     <ScreenShare className="mr-2 h-4 w-4" />
                     {isSharingScreen ? "Stop Sharing" : "Share Screen"}
                 </Button>
-                 <Button onClick={() => { stopScreenShare(); setMode('gallery'); }} variant="outline" className="w-full sm:w-auto" disabled={mode === 'gallery'}>
+                 <Button onClick={stopScreenShare} variant="outline" className="w-full sm:w-auto" disabled={mode === 'gallery'}>
                     <UserSquare className="mr-2 h-4 w-4" />
                     Gallery View
                 </Button>

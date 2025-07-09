@@ -138,6 +138,7 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
     // A host is deleting the room, remove from everywhere
     setAllRooms((prev) => prev.filter((room) => room.id !== roomId));
     setRooms((prev) => prev.filter((room) => room.id !== roomId));
+    setSharedData((prev) => prev.filter((item) => item.roomId !== roomId));
     setRoomLabelAssignments(prev => {
         const newAssignments = {...prev};
         delete newAssignments[roomId];

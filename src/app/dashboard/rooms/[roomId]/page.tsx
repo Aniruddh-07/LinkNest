@@ -6,14 +6,17 @@ import { Stage } from "@/components/room/stage";
 import { FileShare } from "@/components/room/file-share";
 import { WalkieTalkie } from "@/components/room/walkie-talkie";
 import { Badge } from "@/components/ui/badge";
-import { useRooms } from "@/context/RoomContext";
+import { useRooms, type DataType } from "@/context/RoomContext";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { DoorOpen, Trash2 } from "lucide-react";
+import { DoorOpen, Trash2, File as FileIcon, ImageIcon, Video as VideoIcon, MessageSquare } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PendingParticipants, type PendingUser } from "@/components/room/pending-participants";
 import { Chat } from "@/components/room/chat";
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+
 
 // Initial mock data
 const initialParticipants: Participant[] = [
@@ -28,11 +31,23 @@ const initialPendingUsers: PendingUser[] = [
   { name: "Eve", avatar: "https://placehold.co/40x40.png", hint: "woman smiling portrait" },
 ];
 
+const dataTypeIcons: Record<DataType, React.ElementType> = {
+    Image: ImageIcon,
+    Video: VideoIcon,
+    File: FileIcon,
+    Chat: MessageSquare,
+};
+
+const DataIcon = ({type}: {type: DataType}) => {
+    const Icon = dataTypeIcons[type] || FileIcon;
+    return <Icon className="h-5 w-5 text-muted-foreground" />
+}
 
 export default function RoomPage() {
   const router = useRouter();
   const params = useParams<{ roomId: string }>();
-  const { getRoomById, deleteRoom } = useRooms();
+  const { getRoomById, deleteRoom, sharedData, deleteSharedItem } = useRooms();
+  const { toast } = useToast();
 
   const roomId = Array.isArray(params.roomId) ? params.roomId[0] : params.roomId;
   const room = getRoomById(roomId);
@@ -47,6 +62,7 @@ export default function RoomPage() {
   }
 
   const roomName = room.name;
+  const roomFiles = sharedData.filter(item => item.roomId === roomId && item.type !== 'Chat');
 
   const handleLeave = () => {
     router.push('/dashboard');
@@ -91,6 +107,14 @@ export default function RoomPage() {
       }
       return p;
     }));
+  }
+
+  const handleFileDelete = (itemId: string) => {
+    deleteSharedItem(itemId);
+    toast({
+      title: "File Deleted",
+      description: "The file has been removed from the room.",
+    });
   }
 
 
@@ -146,7 +170,39 @@ export default function RoomPage() {
                   <Chat />
               </TabsContent>
               <TabsContent value="files" className="flex-1 mt-6 overflow-y-auto">
-                  <FileShare />
+                <div className="flex flex-col gap-6">
+                    <FileShare />
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-medium px-6">Shared Files</h3>
+                        {roomFiles.length > 0 ? (
+                            <div className="space-y-3 px-6 pb-6">
+                                {roomFiles.map(item => (
+                                    <div key={item.id} className="flex items-center gap-4 p-2 rounded-lg border group">
+                                        <DataIcon type={item.type} />
+                                        <div className="flex-1 overflow-hidden">
+                                            <p className="font-medium truncate">{item.name}</p>
+                                            <p className="text-xs text-muted-foreground">
+                                                Shared on {format(item.date, "LLL dd, y")} &bull; {item.size}
+                                            </p>
+                                        </div>
+                                        {room.isHost && (
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-8 w-8 shrink-0 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                                onClick={() => handleFileDelete(item.id)}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-muted-foreground text-center py-4">No files have been shared in this room yet.</p>
+                        )}
+                    </div>
+                </div>
               </TabsContent>
           </Tabs>
         </div>

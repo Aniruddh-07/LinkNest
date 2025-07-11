@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -13,14 +14,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LinkNestIcon } from "../icons";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, FirebaseWarning } from "@/context/AuthContext";
 import { useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function SignupForm() {
   const router = useRouter();
-  const { signup } = useAuth();
+  const { signup, isFirebaseConfigured } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -48,6 +50,8 @@ export function SignupForm() {
       setIsLoading(false);
     }
   };
+  
+  const isFormDisabled = isLoading || !isFirebaseConfigured;
 
   return (
     <Card className="mx-auto max-w-sm w-full">
@@ -59,6 +63,7 @@ export function SignupForm() {
         <CardDescription>Enter your information to create an account</CardDescription>
       </CardHeader>
       <CardContent>
+        {!isFirebaseConfigured && <FirebaseWarning />}
         {error && (
             <Alert variant="destructive" className="mb-4">
                 <AlertTitle>Signup Failed</AlertTitle>
@@ -73,24 +78,24 @@ export function SignupForm() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
-            <Input id="name" placeholder="John Doe" required value={name} onChange={e => setName(e.target.value)} disabled={isLoading} />
+            <Input id="name" placeholder="John Doe" required value={name} onChange={e => setName(e.target.value)} disabled={isFormDisabled} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={e => setEmail(e.target.value)} disabled={isLoading} />
+            <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={e => setEmail(e.target.value)} disabled={isFormDisabled} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" required value={password} onChange={e => setPassword(e.target.value)} disabled={isLoading} />
+            <Input id="password" type="password" required value={password} onChange={e => setPassword(e.target.value)} disabled={isFormDisabled} />
           </div>
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button type="submit" className="w-full" disabled={isFormDisabled}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Create an account
           </Button>
         </form>
         <div className="mt-4 text-center text-sm">
           Already have an account?{" "}
-          <Link href="/" className="underline">
+          <Link href="/" className={cn(isFormDisabled && "pointer-events-none opacity-50", "underline")}>
             Login
           </Link>
         </div>

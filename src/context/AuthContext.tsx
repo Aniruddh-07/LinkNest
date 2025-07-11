@@ -16,10 +16,18 @@ import {
 import { app } from '@/lib/firebase'; // Ensure you have this file set up
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
+// Check if the necessary Firebase environment variables are set
+const isFirebaseConfigured = !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
+                             !!process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
+                             !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  isFirebaseConfigured: boolean;
   signup: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
@@ -36,6 +44,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
 
   useEffect(() => {
+    if (!isFirebaseConfigured) {
+        setLoading(false);
+        return;
+    }
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
@@ -44,6 +56,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [auth]);
 
   const signup = async (email: string, password: string, name: string) => {
+    if (!isFirebaseConfigured) return { success: false, error: "Firebase is not configured."};
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await updateFirebaseProfile(userCredential.user, { displayName: name });
@@ -57,6 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const login = async (email: string, password: string) => {
+     if (!isFirebaseConfigured) return { success: false, error: "Firebase is not configured."};
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       if (!userCredential.user.emailVerified) {
@@ -74,6 +88,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const sendPasswordReset = async (email: string) => {
+    if (!isFirebaseConfigured) throw new Error("Firebase is not configured.");
     await sendPasswordResetEmail(auth, email);
   };
   
@@ -90,6 +105,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value = {
     user,
     loading,
+    isFirebaseConfigured,
     signup,
     login,
     logout,
@@ -115,3 +131,15 @@ export const useAuth = () => {
   }
   return context;
 };
+
+
+export const FirebaseWarning = () => (
+    <Alert variant="destructive" className="mb-4">
+        <AlertTitle>Firebase Not Configured</AlertTitle>
+        <AlertDescription>
+            Your Firebase environment variables are missing. Please add your project credentials to the 
+            <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold mx-1">.env</code> 
+            file and restart the development server.
+        </AlertDescription>
+    </Alert>
+)

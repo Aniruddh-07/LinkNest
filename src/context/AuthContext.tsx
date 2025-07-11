@@ -13,7 +13,7 @@ import {
   updateProfile as updateFirebaseProfile,
   type User 
 } from 'firebase/auth';
-import { getFirebaseApp, isFirebaseConfigured } from '@/lib/firebase'; // Ensure you have this file set up
+import { getFirebaseApp, checkFirebaseConfiguration } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -31,17 +31,25 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const isFirebaseConfigured = checkFirebaseConfiguration();
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
+    if (!isFirebaseConfigured) {
+        setLoading(false);
+        return;
+    }
     const app = getFirebaseApp();
+    // This should not happen if isFirebaseConfigured is true, but it's a safe guard.
     if (!app) {
         setLoading(false);
         return;
     }
+
     const auth = getAuth(app);
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
@@ -98,12 +106,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const updateProfile = async (profileData: { displayName?: string; photoURL?: string }) => {
     const app = getFirebaseApp();
-    if (!app) throw new Error("No user is currently signed in.");
+    if (!app) throw new Error("Firebase is not properly configured.");
+    
     const auth = getAuth(app);
     if (auth.currentUser) {
       await updateFirebaseProfile(auth.currentUser, profileData);
       // Force a refresh of the user object to get the latest profile data
-      setUser(auth.currentUser ? { ...auth.currentUser } : null);
+      const refreshedUser = { ...auth.currentUser };
+      setUser(refreshedUser);
     } else {
       throw new Error("No user is currently signed in.");
     }
@@ -146,7 +156,7 @@ export const FirebaseWarning = () => (
         <AlertDescription>
             Your Firebase environment variables are missing or incorrect. Please add your project credentials to the 
             <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold mx-1">.env</code> 
-            file and restart the development server.
+            file and ensure the application has been restarted.
         </AlertDescription>
     </Alert>
 )

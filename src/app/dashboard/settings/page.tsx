@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { User, FileText, Users, Download, Trash2, UserPlus, X, Image as ImageIcon, Video, MessageSquare, File as FileIcon, Calendar as CalendarIcon, FilterX, Folder, Edit } from "lucide-react";
+import { User, FileText, Users, Download, Trash2, UserPlus, X, Image as ImageIcon, Video, MessageSquare, File as FileIcon, Calendar as CalendarIcon, FilterX, Folder, Edit, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRooms, type Label as RoomLabel, type SharedData, type DataType, type Friend } from "@/context/RoomContext";
 import { Separator } from "@/components/ui/separator";
@@ -20,6 +20,7 @@ import type { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { useAuth } from "@/context/AuthContext";
 
 const dataTypeIcons: Record<DataType, React.ElementType> = {
     Image: ImageIcon,
@@ -31,8 +32,8 @@ const dataTypeIcons: Record<DataType, React.ElementType> = {
 
 export default function SettingsPage() {
   const { toast } = useToast();
+  const { user, updateProfile, loading } = useAuth();
   const { 
-    userProfile, updateUserProfile, 
     rooms: joinedRooms, 
     labels, updateLabel, deleteLabel,
     sharedData, deleteSharedItem, deleteAllSharedData,
@@ -40,8 +41,8 @@ export default function SettingsPage() {
   } = useRooms();
 
   // Profile State
-  const [name, setName] = useState(userProfile.name);
-  const [email, setEmail] = useState(userProfile.email);
+  const [name, setName] = useState(user?.displayName || "");
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
   
   // Friends State
   const [friendEmail, setFriendEmail] = useState("");
@@ -58,9 +59,10 @@ export default function SettingsPage() {
 
 
   useEffect(() => {
-    setName(userProfile.name);
-    setEmail(userProfile.email);
-  }, [userProfile]);
+    if (user) {
+        setName(user.displayName || "");
+    }
+  }, [user]);
 
 
   const filteredData = useMemo(() => {
@@ -71,19 +73,31 @@ export default function SettingsPage() {
             (!dateRange.to || date <= dateRange.to)
         );
         const roomMatch = roomFilter === 'all' || item.roomId === roomFilter;
-        const typeMatch = typeFilter === 'all' || item.type === typeFilter;
+        const typeMatch = typeFilter === 'all' || item.type === typeMatch;
         return dateMatch && roomMatch && typeMatch;
     });
   }, [sharedData, dateRange, roomFilter, typeFilter]);
 
 
-  const handleProfileSubmit = (e: React.FormEvent) => {
+  const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateUserProfile({ name, email });
-    toast({
-      title: "Profile Saved",
-      description: "Your profile information has been updated.",
-    });
+    if (!user) return;
+    setIsSavingProfile(true);
+    try {
+        await updateProfile({ displayName: name });
+        toast({
+          title: "Profile Saved",
+          description: "Your profile information has been updated.",
+        });
+    } catch(err) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to update profile."
+        })
+    } finally {
+        setIsSavingProfile(false);
+    }
   };
 
   const handleExport = () => {
@@ -205,6 +219,7 @@ export default function SettingsPage() {
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  disabled={isSavingProfile || loading}
                 />
               </div>
               <div className="space-y-2">
@@ -212,11 +227,14 @@ export default function SettingsPage() {
                 <Input
                   id="email"
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={user?.email || ""}
+                  disabled
                 />
               </div>
-              <Button type="submit">Save Changes</Button>
+              <Button type="submit" disabled={isSavingProfile || loading}>
+                {isSavingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Changes
+              </Button>
             </form>
           </CardContent>
         </Card>

@@ -23,24 +23,35 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LinkNestIcon } from "./icons";
-import { LogOut, Moon, Settings, Sun, Users, MoreHorizontal, Trash2, Compass, MinusCircle, PlusCircle, Folder, Tag } from "lucide-react";
+import { LogOut, Moon, Settings, Sun, Users, MoreHorizontal, Trash2, Compass, MinusCircle, PlusCircle, Folder, Tag, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRooms, type Label as RoomLabel } from "@/context/RoomContext";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useAuth } from "@/context/AuthContext";
 
 
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { rooms, removeFromJoined, deleteRoom, userProfile, labels, addLabel, assignLabelToRoom, roomLabelAssignments } = useRooms();
+  const { rooms, removeFromJoined, deleteRoom, labels, addLabel, assignLabelToRoom, roomLabelAssignments } = useRooms();
   const { setTheme } = useTheme();
+  const { user, logout } = useAuth();
 
   const [isLabelDialogOpen, setIsLabelDialogOpen] = useState(false);
   const [newLabelName, setNewLabelName] = useState("");
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const handleLogout = () => {
-    // Mock logout logic
-    router.push("/");
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      router.push("/");
+    } catch (error) {
+      console.error("Logout failed", error);
+      // Handle logout error, maybe show a toast
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
   
   const handleCreateLabel = () => {
@@ -132,6 +143,16 @@ export function Sidebar() {
     )
   }
 
+  if (!user) {
+    return (
+       <aside className="hidden w-64 flex-col border-r bg-background sm:flex p-4">
+        <div className="flex-1 flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+       </aside>
+    )
+  }
+
   return (
     <>
     <aside className="hidden w-64 flex-col border-r bg-background sm:flex">
@@ -220,12 +241,12 @@ export function Sidebar() {
                   alt="@user"
                   data-ai-hint="user avatar"
                 />
-                <AvatarFallback>{userProfile.name.charAt(0)}</AvatarFallback>
+                <AvatarFallback>{user.displayName?.charAt(0) || user.email?.charAt(0)}</AvatarFallback>
               </Avatar>
               <div className="text-left">
-                <p className="text-sm font-medium">{userProfile.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {userProfile.email}
+                <p className="text-sm font-medium truncate">{user.displayName || 'User'}</p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {user.email}
                 </p>
               </div>
             </Button>
@@ -258,8 +279,8 @@ export function Sidebar() {
               </DropdownMenuPortal>
             </DropdownMenuSub>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
+            <DropdownMenuItem onClick={handleLogout} disabled={isLoggingOut}>
+              {isLoggingOut ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogOut className="mr-2 h-4 w-4" />}
               <span>Logout</span>
             </DropdownMenuItem>
           </DropdownMenuContent>

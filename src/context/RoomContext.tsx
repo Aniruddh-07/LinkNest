@@ -1,8 +1,9 @@
 
 "use client";
 
-import React, { createContext, useState, useContext, ReactNode, useCallback } from "react";
+import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "./AuthContext";
 
 export interface Room {
   id: string;
@@ -108,11 +109,6 @@ const initialAllRooms: Room[] = [
 // Initially, user has joined a subset of rooms
 const initialJoinedRooms = initialAllRooms.filter(r => r.id === 'a1b2c3' || r.id === 'g7h8i9' || r.id === 'j1k2l3');
 
-const initialUserProfile: UserProfile = {
-  name: "User",
-  email: "user@example.com",
-};
-
 const initialLabels: Label[] = [
     { id: "lbl-1", name: "Work" },
     { id: "lbl-2", name: "Fun" },
@@ -135,22 +131,25 @@ const initialFriends: Friend[] = [
   { name: "Bob", email: "bob@example.com", avatar: "https://placehold.co/40x40.png", hint: "man portrait" },
 ];
 
-const initialParticipants: Record<string, Participant[]> = {
-  "a1b2c3": [
-    { name: "You", email: "user@example.com", avatar: "https://placehold.co/40x40.png", hint: "user avatar", isHost: true, isMuted: false, isCameraOff: false },
-    { name: "Alice", email: "alice@example.com", avatar: "https://placehold.co/40x40.png", hint: "woman smiling", isHost: false, isMuted: false, isCameraOff: false },
-  ],
-  "g7h8i9": [
-    { name: "You", email: "user@example.com", avatar: "https://placehold.co/40x40.png", hint: "user avatar", isHost: true, isMuted: false, isCameraOff: false },
-    { name: "Bob", email: "bob@example.com", avatar: "https://placehold.co/40x40.png", hint: "man portrait", isHost: false, isMuted: true, isCameraOff: false },
-    { name: "Charlie", email: "charlie@example.com", avatar: "https://placehold.co/40x40.png", hint: "person glasses", isHost: false, isMuted: false, isCameraOff: true },
-  ],
-  "j1k2l3": [
-    { name: "You", email: "user@example.com", avatar: "https://placehold.co/40x40.png", hint: "user avatar", isHost: true, isMuted: false, isCameraOff: false },
-  ],
-  "d4e5f6": [ // joined private room
-    { name: "You", email: "user@example.com", avatar: "https://placehold.co/40x40.png", hint: "user avatar", isHost: false, isMuted: false, isCameraOff: false },
-  ],
+const getInitialParticipants = (user: UserProfile | null): Record<string, Participant[]> => {
+    if (!user) return {};
+    return {
+        "a1b2c3": [
+            { name: user.name, email: user.email, avatar: "https://placehold.co/40x40.png", hint: "user avatar", isHost: true, isMuted: false, isCameraOff: false },
+            { name: "Alice", email: "alice@example.com", avatar: "https://placehold.co/40x40.png", hint: "woman smiling", isHost: false, isMuted: false, isCameraOff: false },
+        ],
+        "g7h8i9": [
+            { name: user.name, email: user.email, avatar: "https://placehold.co/40x40.png", hint: "user avatar", isHost: true, isMuted: false, isCameraOff: false },
+            { name: "Bob", email: "bob@example.com", avatar: "https://placehold.co/40x40.png", hint: "man portrait", isHost: false, isMuted: true, isCameraOff: false },
+            { name: "Charlie", email: "charlie@example.com", avatar: "https://placehold.co/40x40.png", hint: "person glasses", isHost: false, isMuted: false, isCameraOff: true },
+        ],
+        "j1k2l3": [
+            { name: user.name, email: user.email, avatar: "https://placehold.co/40x40.png", hint: "user avatar", isHost: true, isMuted: false, isCameraOff: false },
+        ],
+        "d4e5f6": [
+            { name: user.name, email: user.email, avatar: "https://placehold.co/40x40.png", hint: "user avatar", isHost: false, isMuted: false, isCameraOff: false },
+        ],
+    };
 };
 
 const initialPendingUsers: Record<string, PendingUser[]> = {
@@ -163,15 +162,29 @@ const initialPendingUsers: Record<string, PendingUser[]> = {
 
 export const RoomProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
+  const { user } = useAuth();
+  
+  const [userProfile, setUserProfile] = useState<UserProfile>({ name: "User", email: "user@example.com" });
+  
   const [allRooms, setAllRooms] = useState<Room[]>(initialAllRooms);
   const [rooms, setRooms] = useState<Room[]>(initialJoinedRooms); // Joined rooms
-  const [userProfile, setUserProfile] = useState<UserProfile>(initialUserProfile);
   const [labels, setLabels] = useState<Label[]>(initialLabels);
   const [roomLabelAssignments, setRoomLabelAssignments] = useState<Record<string, string>>(initialAssignments);
   const [sharedData, setSharedData] = useState<SharedData[]>(initialSharedData);
   const [friends, setFriends] = useState<Friend[]>(initialFriends);
-  const [participants, setParticipants] = useState<Record<string, Participant[]>>(initialParticipants);
+  const [participants, setParticipants] = useState<Record<string, Participant[]>>({});
   const [pendingUsers, setPendingUsers] = useState<Record<string, PendingUser[]>>(initialPendingUsers);
+
+  useEffect(() => {
+    if (user) {
+      const profile = {
+        name: user.displayName || 'User',
+        email: user.email || 'user@example.com',
+      };
+      setUserProfile(profile);
+      setParticipants(getInitialParticipants(profile));
+    }
+  }, [user]);
 
   const addRoom = useCallback((roomDetails: Omit<Room, 'id' | 'isHost'>): Room => {
     const newRoom: Room = {
@@ -228,7 +241,7 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
     return room?.type === 'private' && room.password === pass;
   }
 
-  const updateUserProfile = (profile: UserProfile) => {
+  const updateUserProfileContext = (profile: UserProfile) => {
     setUserProfile(profile);
   };
 
@@ -365,7 +378,7 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
         checkRoomPassword, 
         joinRoom, 
         userProfile, 
-        updateUserProfile,
+        updateUserProfile: updateUserProfileContext,
         labels,
         addLabel,
         updateLabel,

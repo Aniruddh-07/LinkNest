@@ -31,20 +31,22 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const isFirebaseConfigured = checkFirebaseConfiguration();
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  // This is the key change: check the configuration inside the component, not at the module level.
+  const [isFirebaseConfigured, setIsFirebaseConfigured] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    if (!isFirebaseConfigured) {
+    const configured = checkFirebaseConfiguration();
+    setIsFirebaseConfigured(configured);
+
+    if (!configured) {
         setLoading(false);
         return;
     }
     const app = getFirebaseApp();
-    // This should not happen if isFirebaseConfigured is true, but it's a safe guard.
     if (!app) {
         setLoading(false);
         return;

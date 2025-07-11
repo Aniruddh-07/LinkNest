@@ -14,50 +14,10 @@ import {
   type User,
   type Auth
 } from 'firebase/auth';
-import { initializeApp, getApps, getApp, type FirebaseApp, type FirebaseOptions } from "firebase/app";
+import { getFirebaseApp, checkFirebaseConfiguration } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-
-// --- Firebase Initialization Logic ---
-let app: FirebaseApp | null = null;
-let auth: Auth | null = null;
-
-const checkFirebaseConfiguration = () => {
-    return (
-      !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
-      !!process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
-      !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
-    );
-};
-
-const getFirebaseApp = () => {
-    if (app) {
-        return app;
-    }
-
-    if (!checkFirebaseConfiguration()) {
-        console.error("Firebase configuration is missing or incomplete.");
-        return null;
-    }
-
-    const firebaseConfig: FirebaseOptions = {
-        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-        messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-        appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-    };
-    
-    if (getApps().length > 0) {
-        app = getApp();
-    } else {
-        app = initializeApp(firebaseConfig);
-    }
-    return app;
-}
-
 
 // --- Auth Context ---
 interface AuthContextType {
@@ -88,13 +48,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
     }
 
-    const firebaseApp = getFirebaseApp();
-    if (!firebaseApp) {
+    const app = getFirebaseApp();
+    if (!app) {
         setLoading(false);
         return;
     }
     
-    auth = getAuth(firebaseApp);
+    const auth = getAuth(app);
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
@@ -104,19 +64,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
   
   const ensureAuthInitialized = () => {
-    if (!auth) {
-      const firebaseApp = getFirebaseApp();
-      if (firebaseApp) {
-        auth = getAuth(firebaseApp);
-      }
+    const app = getFirebaseApp();
+    if (!app) {
+        throw new Error("Firebase App is not initialized.");
     }
-    if (!auth) {
-        throw new Error("Firebase Authentication is not initialized.");
-    }
-    return auth;
+    return getAuth(app);
   }
 
   const signup = async (email: string, password: string, name: string) => {
+    if (!isFirebaseConfigured) return { success: false, error: "Firebase is not configured." };
     try {
       const authInstance = ensureAuthInitialized();
       const userCredential = await createUserWithEmailAndPassword(authInstance, email, password);
@@ -130,6 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const login = async (email: string, password: string) => {
+    if (!isFirebaseConfigured) return { success: false, error: "Firebase is not configured." };
     try {
      const authInstance = ensureAuthInitialized();
       const userCredential = await signInWithEmailAndPassword(authInstance, email, password);

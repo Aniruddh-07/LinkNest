@@ -13,16 +13,10 @@ import {
   updateProfile as updateFirebaseProfile,
   type User 
 } from 'firebase/auth';
-import { app } from '@/lib/firebase'; // Ensure you have this file set up
+import { app, isFirebaseConfigured } from '@/lib/firebase'; // Ensure you have this file set up
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-
-// Check if the necessary Firebase environment variables are set
-const isFirebaseConfigured = !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
-                             !!process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
-                             !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-
 
 interface AuthContextType {
   user: User | null;
@@ -40,23 +34,24 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const auth = getAuth(app);
   const router = useRouter();
 
   useEffect(() => {
-    if (!isFirebaseConfigured) {
+    if (!isFirebaseConfigured || !app) {
         setLoading(false);
         return;
     }
+    const auth = getAuth(app);
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
     });
     return () => unsubscribe();
-  }, [auth]);
+  }, []);
 
   const signup = async (email: string, password: string, name: string) => {
-    if (!isFirebaseConfigured) return { success: false, error: "Firebase is not configured."};
+    if (!isFirebaseConfigured || !app) return { success: false, error: "Firebase is not configured."};
+    const auth = getAuth(app);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await updateFirebaseProfile(userCredential.user, { displayName: name });
@@ -70,7 +65,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const login = async (email: string, password: string) => {
-     if (!isFirebaseConfigured) return { success: false, error: "Firebase is not configured."};
+     if (!isFirebaseConfigured || !app) return { success: false, error: "Firebase is not configured."};
+     const auth = getAuth(app);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       if (!userCredential.user.emailVerified) {
@@ -83,16 +79,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = async () => {
+    if (!app) return;
+    const auth = getAuth(app);
     await signOut(auth);
     router.push('/');
   };
 
   const sendPasswordReset = async (email: string) => {
-    if (!isFirebaseConfigured) throw new Error("Firebase is not configured.");
+    if (!isFirebaseConfigured || !app) throw new Error("Firebase is not configured.");
+    const auth = getAuth(app);
     await sendPasswordResetEmail(auth, email);
   };
   
   const updateProfile = async (profileData: { displayName?: string; photoURL?: string }) => {
+    if (!app) throw new Error("No user is currently signed in.");
+    const auth = getAuth(app);
     if (auth.currentUser) {
       await updateFirebaseProfile(auth.currentUser, profileData);
       // Force a refresh of the user object to get the latest profile data
@@ -137,7 +138,7 @@ export const FirebaseWarning = () => (
     <Alert variant="destructive" className="mb-4">
         <AlertTitle>Firebase Not Configured</AlertTitle>
         <AlertDescription>
-            Your Firebase environment variables are missing. Please add your project credentials to the 
+            Your Firebase environment variables are missing or incorrect. Please add your project credentials to the 
             <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold mx-1">.env</code> 
             file and restart the development server.
         </AlertDescription>

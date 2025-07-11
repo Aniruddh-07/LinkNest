@@ -21,8 +21,8 @@ import { Loader2 } from "lucide-react";
 export function LoginForm() {
   const router = useRouter();
   const { login, sendPasswordReset } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("test@example.com");
+  const [password, setPassword] = useState("password");
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);

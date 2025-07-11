@@ -23,8 +23,8 @@ import { cn } from "@/lib/utils";
 export function LoginForm() {
   const router = useRouter();
   const { login, sendPasswordReset, isFirebaseConfigured } = useAuth();
-  const [email, setEmail] = useState("test@example.com");
-  const [password, setPassword] = useState("password");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);

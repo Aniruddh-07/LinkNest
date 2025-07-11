@@ -21,8 +21,8 @@ import { Loader2 } from "lucide-react";
 export function LoginForm() {
   const router = useRouter();
   const { login, sendPasswordReset } = useAuth();
-  const [email, setEmail] = useState("test@example.com");
-  const [password, setPassword] = useState("password");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -97,7 +97,7 @@ export function LoginForm() {
                 Forgot your password?
               </Button>
             </div>
-            <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} />
+            <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.targe.value)} disabled={isLoading} />
           </div>
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

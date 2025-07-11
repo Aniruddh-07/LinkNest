@@ -13,7 +13,7 @@ import {
   updateProfile as updateFirebaseProfile,
   type User 
 } from 'firebase/auth';
-import { app, isFirebaseConfigured } from '@/lib/firebase'; // Ensure you have this file set up
+import { getFirebaseApp, isFirebaseConfigured } from '@/lib/firebase'; // Ensure you have this file set up
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -37,7 +37,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
 
   useEffect(() => {
-    if (!isFirebaseConfigured || !app) {
+    const app = getFirebaseApp();
+    if (!app) {
         setLoading(false);
         return;
     }
@@ -50,7 +51,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signup = async (email: string, password: string, name: string) => {
-    if (!isFirebaseConfigured || !app) return { success: false, error: "Firebase is not configured."};
+    const app = getFirebaseApp();
+    if (!app) return { success: false, error: "Firebase is not configured."};
     const auth = getAuth(app);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -65,7 +67,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const login = async (email: string, password: string) => {
-     if (!isFirebaseConfigured || !app) return { success: false, error: "Firebase is not configured."};
+     const app = getFirebaseApp();
+     if (!app) return { success: false, error: "Firebase is not configured."};
      const auth = getAuth(app);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -79,6 +82,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = async () => {
+    const app = getFirebaseApp();
     if (!app) return;
     const auth = getAuth(app);
     await signOut(auth);
@@ -86,12 +90,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const sendPasswordReset = async (email: string) => {
-    if (!isFirebaseConfigured || !app) throw new Error("Firebase is not configured.");
+    const app = getFirebaseApp();
+    if (!app) throw new Error("Firebase is not configured.");
     const auth = getAuth(app);
     await sendPasswordResetEmail(auth, email);
   };
   
   const updateProfile = async (profileData: { displayName?: string; photoURL?: string }) => {
+    const app = getFirebaseApp();
     if (!app) throw new Error("No user is currently signed in.");
     const auth = getAuth(app);
     if (auth.currentUser) {

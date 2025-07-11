@@ -1,6 +1,6 @@
 
 // Import the functions you need from the SDKs you need
-import { initializeApp, getApps, getApp, type FirebaseOptions } from "firebase/app";
+import { initializeApp, getApps, getApp, type FirebaseApp, type FirebaseOptions } from "firebase/app";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -16,15 +16,29 @@ const firebaseConfig: FirebaseOptions = {
 };
 
 // Check if all necessary environment variables are defined
-const isFirebaseConfigured =
+export const isFirebaseConfigured =
   !!firebaseConfig.apiKey &&
   !!firebaseConfig.authDomain &&
   !!firebaseConfig.projectId;
 
-// Initialize Firebase only if the configuration is valid
-const app =
-  !getApps().length && isFirebaseConfigured
-    ? initializeApp(firebaseConfig)
-    : (getApps().length > 0 && isFirebaseConfigured ? getApp() : null);
+let app: FirebaseApp | null = null;
 
-export { app, isFirebaseConfigured };
+// Initialize Firebase only if the configuration is valid
+function getFirebaseApp() {
+    if (app) {
+        return app;
+    }
+
+    if (!isFirebaseConfigured) {
+        return null;
+    }
+    
+    if (getApps().length > 0) {
+        app = getApp();
+    } else {
+        app = initializeApp(firebaseConfig);
+    }
+    return app;
+}
+
+export { getFirebaseApp };

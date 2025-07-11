@@ -18,6 +18,7 @@ import { useAuth, FirebaseWarning } from "@/context/AuthContext";
 import { useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function LoginForm() {
   const router = useRouter();

@@ -79,7 +79,7 @@ export function WalkieTalkie() {
     if (audioTrack) {
       audioTrack.enabled = !isMuted;
     }
-  }, [isCameraOn, isMuted]);
+  }, [isCameraOn, isMuted, hasPermission]); // Add hasPermission dependency
 
   // Button handlers now just call the context functions
   const handleToggleCamera = () => {
@@ -103,7 +103,7 @@ export function WalkieTalkie() {
           <div className="relative aspect-video w-full rounded-lg overflow-hidden bg-muted">
             <video
               ref={videoRef}
-              className={`w-full h-full object-cover ${isCameraOn ? 'block' : 'hidden'}`}
+              className={`w-full h-full object-cover ${isCameraOn && hasPermission ? 'block' : 'hidden'}`}
               autoPlay
               muted
               playsInline
@@ -129,7 +129,7 @@ export function WalkieTalkie() {
               className="w-full h-12"
               onClick={handleToggleMute}
               disabled={!hasPermission || !me}
-              variant={isMuted ? "outline" : "default"}
+              variant={isMuted ? "default" : "outline"}
             >
               {isMuted ? <MicOff className="mr-2 h-5 w-5" /> : <Mic className="mr-2 h-5 w-5" />}
               {isMuted ? "Unmute Mic" : "Mute Mic"}

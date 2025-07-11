@@ -9,25 +9,57 @@ import { Input } from "@/components/ui/input";
 import { Youtube, Link, ScreenShare, UserSquare, VideoOff } from "lucide-react";
 import type { Participant } from "@/context/RoomContext";
 import { useToast } from "@/hooks/use-toast";
+import { useRooms } from "@/context/RoomContext";
 
 // --- Sub-components for different Stage modes ---
 
-const GalleryView = ({ participants }: { participants: Participant[] }) => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 border rounded-lg bg-muted/40 h-full">
-        {participants.map(p => (
-            <div key={p.email} className="relative aspect-video w-full rounded-lg overflow-hidden bg-muted flex items-center justify-center">
-                 {p.isCameraOff ? (
-                     <div className="flex flex-col items-center text-muted-foreground">
-                        <VideoOff className="h-12 w-12" />
-                     </div>
-                 ) : (
-                    <Image src="https://placehold.co/640x360.png" layout="fill" objectFit="cover" alt={`${p.name}'s video feed`} data-ai-hint="person video call" />
-                 )}
-                 <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 rounded-md text-sm font-medium">{p.name}</div>
-            </div>
-        ))}
-    </div>
-);
+const GalleryView = ({ participants }: { participants: Participant[] }) => {
+    const { userProfile } = useRooms();
+    const myVideoRef = useRef<HTMLVideoElement>(null);
+
+    // This effect handles the user's own local video stream
+    useEffect(() => {
+        const getMyMedia = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                if (myVideoRef.current) {
+                    myVideoRef.current.srcObject = stream;
+                }
+            } catch (err) {
+                console.error("Error getting my media for stage view:", err);
+            }
+        };
+        getMyMedia();
+
+        return () => {
+            if (myVideoRef.current && myVideoRef.current.srcObject) {
+                (myVideoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
+            }
+        }
+    }, []);
+
+
+    return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 border rounded-lg bg-muted/40 h-full">
+            {participants.map(p => (
+                <div key={p.email} className="relative aspect-video w-full rounded-lg overflow-hidden bg-muted flex items-center justify-center">
+                     {(p.isCameraOff) ? (
+                         <div className="flex flex-col items-center text-muted-foreground">
+                            <VideoOff className="h-12 w-12" />
+                         </div>
+                     ) : (
+                        p.email === userProfile.email ? (
+                           <video ref={myVideoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+                        ) : (
+                           <Image src="https://placehold.co/640x360.png" layout="fill" objectFit="cover" alt={`${p.name}'s video feed`} data-ai-hint="person video call" />
+                        )
+                     )}
+                     <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 rounded-md text-sm font-medium">{p.name}</div>
+                </div>
+            ))}
+        </div>
+    );
+}
 
 const YouTubeView = ({ videoUrl }: { videoUrl: string }) => {
     return (

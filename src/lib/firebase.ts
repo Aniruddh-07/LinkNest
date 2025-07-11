@@ -17,9 +17,9 @@ const firebaseConfig: FirebaseOptions = {
 
 // Check if all necessary environment variables are defined
 const isFirebaseConfigured =
-  firebaseConfig.apiKey &&
-  firebaseConfig.authDomain &&
-  firebaseConfig.projectId;
+  !!firebaseConfig.apiKey &&
+  !!firebaseConfig.authDomain &&
+  !!firebaseConfig.projectId;
 
 // Initialize Firebase only if the configuration is valid
 const app =

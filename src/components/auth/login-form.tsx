@@ -97,7 +97,7 @@ export function LoginForm() {
                 Forgot your password?
               </Button>
             </div>
-            <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.targe.value)} disabled={isLoading} />
+            <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} />
           </div>
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

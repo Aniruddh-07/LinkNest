@@ -11,13 +11,55 @@ import {
   sendEmailVerification,
   sendPasswordResetEmail,
   updateProfile as updateFirebaseProfile,
-  type User 
+  type User,
+  type Auth
 } from 'firebase/auth';
-import { getFirebaseApp, checkFirebaseConfiguration } from '@/lib/firebase';
+import { initializeApp, getApps, getApp, type FirebaseApp, type FirebaseOptions } from "firebase/app";
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
+// --- Firebase Initialization Logic ---
+let app: FirebaseApp | null = null;
+let auth: Auth | null = null;
+
+const checkFirebaseConfiguration = () => {
+    return (
+      !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
+      !!process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
+      !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    );
+};
+
+const getFirebaseApp = () => {
+    if (app) {
+        return app;
+    }
+
+    if (!checkFirebaseConfiguration()) {
+        console.error("Firebase configuration is missing or incomplete.");
+        return null;
+    }
+
+    const firebaseConfig: FirebaseOptions = {
+        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+        appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+    };
+    
+    if (getApps().length > 0) {
+        app = getApp();
+    } else {
+        app = initializeApp(firebaseConfig);
+    }
+    return app;
+}
+
+
+// --- Auth Context ---
 interface AuthContextType {
   user: User | null;
   loading: boolean;
@@ -34,7 +76,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  // This is the key change: check the configuration inside the component, not at the module level.
   const [isFirebaseConfigured, setIsFirebaseConfigured] = useState(false);
   const router = useRouter();
 
@@ -46,29 +87,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
         return;
     }
-    const app = getFirebaseApp();
-    if (!app) {
+
+    const firebaseApp = getFirebaseApp();
+    if (!firebaseApp) {
         setLoading(false);
         return;
     }
-
-    const auth = getAuth(app);
+    
+    auth = getAuth(firebaseApp);
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
     });
+
     return () => unsubscribe();
   }, []);
+  
+  const ensureAuthInitialized = () => {
+    if (!auth) {
+      const firebaseApp = getFirebaseApp();
+      if (firebaseApp) {
+        auth = getAuth(firebaseApp);
+      }
+    }
+    if (!auth) {
+        throw new Error("Firebase Authentication is not initialized.");
+    }
+    return auth;
+  }
 
   const signup = async (email: string, password: string, name: string) => {
-    const app = getFirebaseApp();
-    if (!app) return { success: false, error: "Firebase is not configured."};
-    const auth = getAuth(app);
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const authInstance = ensureAuthInitialized();
+      const userCredential = await createUserWithEmailAndPassword(authInstance, email, password);
       await updateFirebaseProfile(userCredential.user, { displayName: name });
       await sendEmailVerification(userCredential.user);
-      // Update local user state immediately
       setUser({ ...userCredential.user, displayName: name });
       return { success: true };
     } catch (error: any) {
@@ -77,11 +130,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const login = async (email: string, password: string) => {
-     const app = getFirebaseApp();
-     if (!app) return { success: false, error: "Firebase is not configured."};
-     const auth = getAuth(app);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+     const authInstance = ensureAuthInitialized();
+      const userCredential = await signInWithEmailAndPassword(authInstance, email, password);
       if (!userCredential.user.emailVerified) {
         return { success: false, error: "Please verify your email before logging in. Check your inbox for a verification link." };
       }
@@ -92,29 +143,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = async () => {
-    const app = getFirebaseApp();
-    if (!app) return;
-    const auth = getAuth(app);
-    await signOut(auth);
+    const authInstance = ensureAuthInitialized();
+    await signOut(authInstance);
     router.push('/');
   };
 
   const sendPasswordReset = async (email: string) => {
-    const app = getFirebaseApp();
-    if (!app) throw new Error("Firebase is not configured.");
-    const auth = getAuth(app);
-    await sendPasswordResetEmail(auth, email);
+    const authInstance = ensureAuthInitialized();
+    await sendPasswordResetEmail(authInstance, email);
   };
   
   const updateProfile = async (profileData: { displayName?: string; photoURL?: string }) => {
-    const app = getFirebaseApp();
-    if (!app) throw new Error("Firebase is not properly configured.");
-    
-    const auth = getAuth(app);
-    if (auth.currentUser) {
-      await updateFirebaseProfile(auth.currentUser, profileData);
-      // Force a refresh of the user object to get the latest profile data
-      const refreshedUser = { ...auth.currentUser };
+    const authInstance = ensureAuthInitialized();
+    if (authInstance.currentUser) {
+      await updateFirebaseProfile(authInstance.currentUser, profileData);
+      const refreshedUser = { ...authInstance.currentUser };
       setUser(refreshedUser);
     } else {
       throw new Error("No user is currently signed in.");

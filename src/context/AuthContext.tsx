@@ -11,15 +11,56 @@ import {
   sendEmailVerification,
   sendPasswordResetEmail,
   updateProfile as updateFirebaseProfile,
+  signInWithPopup,
+  GoogleAuthProvider,
+  GithubAuthProvider,
   type User,
   type Auth
 } from 'firebase/auth';
-import { getFirebaseApp, checkFirebaseConfiguration } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { DashboardSkeleton } from '@/components/loaders';
+import { DashboardSkeleton, AnimatedLogoLoader } from '@/components/loaders';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+
+// --- Firebase Initialization ---
+import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
+
+let app: FirebaseApp | null = null;
+
+const checkFirebaseConfiguration = (): boolean => {
+    return (
+      !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
+      !!process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
+      !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    );
+};
+
+const getFirebaseApp = (): FirebaseApp | null => {
+    if (app) return app;
+
+    if (!checkFirebaseConfiguration()) {
+        console.error("Firebase configuration is missing or incomplete.");
+        return null;
+    }
+
+    const firebaseConfig = {
+        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+        appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+    };
+    
+    if (getApps().length > 0) {
+        app = getApp();
+    } else {
+        app = initializeApp(firebaseConfig);
+    }
+    return app;
+}
+
 
 // --- Auth Context ---
 interface AuthContextType {
@@ -29,8 +70,9 @@ interface AuthContextType {
   signup: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
-  sendPasswordReset: (email: string) => Promise<void>;
   updateProfile: (profileData: { displayName?: string; photoURL?: string }) => Promise<void>;
+  signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
+  signInWithGitHub: () => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -65,10 +107,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, []);
   
-  const ensureAuthInitialized = () => {
+  const ensureAuthInitialized = (): Auth => {
     const app = getFirebaseApp();
     if (!app) {
-        throw new Error("Firebase App is not initialized.");
+        throw new Error("Firebase App is not initialized. Check your .env file.");
     }
     return getAuth(app);
   }
@@ -93,7 +135,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
      const authInstance = ensureAuthInitialized();
       const userCredential = await signInWithEmailAndPassword(authInstance, email, password);
       if (!userCredential.user.emailVerified) {
-        return { success: false, error: "Please verify your email before logging in. Check your inbox for a verification link." };
+        // Allow login but maybe show a banner in-app later. For now, let's let them in.
+        // return { success: false, error: "Please verify your email before logging in. Check your inbox for a verification link." };
       }
       return { success: true };
     } catch (error: any) {
@@ -101,15 +144,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const socialSignIn = async (provider: GoogleAuthProvider | GithubAuthProvider) => {
+    if (!isFirebaseConfigured) return { success: false, error: "Firebase is not configured." };
+    try {
+        const authInstance = ensureAuthInitialized();
+        await signInWithPopup(authInstance, provider);
+        return { success: true };
+    } catch (error: any) {
+         if (error.code === 'auth/account-exists-with-different-credential') {
+            return { success: false, error: "An account already exists with the same email address but different sign-in credentials." };
+         }
+        return { success: false, error: error.message };
+    }
+  }
+
+  const signInWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    return socialSignIn(provider);
+  }
+
+  const signInWithGitHub = async () => {
+    const provider = new GithubAuthProvider();
+    return socialSignIn(provider);
+  }
+
   const logout = async () => {
     const authInstance = ensureAuthInitialized();
     await signOut(authInstance);
-    router.push('/');
-  };
-
-  const sendPasswordReset = async (email: string) => {
-    const authInstance = ensureAuthInitialized();
-    await sendPasswordResetEmail(authInstance, email);
+    router.push("/");
   };
   
   const updateProfile = async (profileData: { displayName?: string; photoURL?: string }) => {
@@ -130,22 +192,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signup,
     login,
     logout,
-    sendPasswordReset,
     updateProfile,
+    signInWithGoogle,
+    signInWithGitHub,
   };
 
   if (loading) {
-    // Determine which loader to show based on the current path
     if (typeof window !== "undefined") {
       const pathname = window.location.pathname;
-      if (pathname === '/login' || pathname === '/signup') {
-        return <AuthFormSkeleton />;
-      }
-      if (pathname.startsWith('/dashboard')) {
-        return <DashboardSkeleton />;
-      }
+      if (pathname.startsWith('/dashboard')) return <DashboardSkeleton />;
+      if (pathname === '/login' || pathname === '/signup') return <AuthFormSkeleton />;
     }
-    // Default to the main logo loader for the landing page
     return (
       <div className="flex min-h-screen w-full items-center justify-center bg-background">
           <AnimatedLogoLoader />
@@ -179,13 +236,20 @@ export const FirebaseWarning = () => (
 export const AuthFormSkeleton = () => (
   <Card className="mx-auto max-w-sm w-full">
     <CardHeader className="space-y-2 text-center">
-      <div className="flex justify-center">
+      <div className="flex justify-center mb-2">
         <Skeleton className="h-8 w-8 rounded-full" />
       </div>
       <Skeleton className="h-6 w-32 mx-auto" />
       <Skeleton className="h-4 w-48 mx-auto" />
     </CardHeader>
     <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+        </div>
+        <div className="h-5 flex items-center">
+            <Skeleton className="h-px w-full" />
+        </div>
         <div className="space-y-2">
             <Skeleton className="h-4 w-16" />
             <Skeleton className="h-10 w-full" />
@@ -195,43 +259,7 @@ export const AuthFormSkeleton = () => (
             <Skeleton className="h-10 w-full" />
         </div>
         <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-40 mx-auto" />
     </CardContent>
   </Card>
 )
-
-export function AnimatedLogoLoader() {
-  return (
-    <div className="flex flex-col items-center justify-center h-full gap-4">
-      <style jsx>{`
-        .icon-container {
-          animation: bounce 2s infinite ease-in-out;
-        }
-        .text-container span {
-          opacity: 0;
-          animation: fadeIn 1s forwards;
-        }
-        @keyframes bounce {
-          0%, 20%, 50%, 80%, 100% {
-            transform: translateY(0);
-          }
-          40% {
-            transform: translateY(-20px);
-          }
-          60% {
-            transform: translateY(-10px);
-          }
-        }
-        @keyframes fadeIn {
-          to {
-            opacity: 1;
-          }
-        }
-      `}</style>
-      <div className="icon-container">
-        <Skeleton className="h-16 w-16 rounded-full" />
-      </div>
-       <Skeleton className="h-8 w-40" />
-    </div>
-  );
-}

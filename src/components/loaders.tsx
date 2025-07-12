@@ -1,3 +1,4 @@
+
 import { LinkNestIcon } from "./icons";
 import { Skeleton } from "./ui/skeleton";
 import { Card, CardContent, CardHeader } from "./ui/card";
@@ -11,7 +12,7 @@ export function AnimatedLogoLoader() {
         }
         .text-container span {
           opacity: 0;
-          animation: fadeIn 1s forwards;
+          animation: fadeIn 1.5s forwards;
         }
         @keyframes bounce {
           0%, 20%, 50%, 80%, 100% {
@@ -46,12 +47,12 @@ export function DashboardSkeleton() {
     return (
         <div className="flex min-h-screen w-full bg-muted/40">
             {/* Sidebar Skeleton */}
-            <aside className="hidden w-64 flex-col border-r bg-background sm:flex p-4 space-y-4">
+            <aside className="hidden w-64 flex-col border-r bg-background sm:flex p-4">
                 <div className="flex h-[60px] items-center border-b px-2">
                     <Skeleton className="h-8 w-8 rounded-full mr-2" />
                     <Skeleton className="h-6 w-24" />
                 </div>
-                <div className="flex-1 space-y-2 px-2">
+                <div className="flex-1 space-y-2 py-2 px-2">
                     <Skeleton className="h-10 w-full" />
                     <Skeleton className="h-4 w-20 mt-4 mb-2" />
                     <Skeleton className="h-8 w-full" />
@@ -75,9 +76,8 @@ export function DashboardSkeleton() {
                         <Skeleton className="h-8 w-64" />
                         <Skeleton className="h-4 w-80 mt-2" />
                     </div>
-                    <Skeleton className="h-10 w-24" />
                 </div>
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 flex-1">
+                <div className="grid gap-6 md:grid-cols-2">
                     <Card>
                         <CardHeader>
                             <Skeleton className="h-6 w-3/4" />
@@ -96,9 +96,6 @@ export function DashboardSkeleton() {
                             <Skeleton className="h-10 w-full" />
                         </CardContent>
                     </Card>
-                    <div className="lg:col-span-3">
-                         <Skeleton className="h-48 w-full" />
-                    </div>
                 </div>
             </main>
         </div>

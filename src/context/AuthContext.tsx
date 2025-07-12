@@ -81,9 +81,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFirebaseConfigured, setIsFirebaseConfigured] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
+    setIsClient(true);
     const configured = checkFirebaseConfiguration();
     setIsFirebaseConfigured(configured);
 
@@ -197,12 +199,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signInWithGitHub,
   };
 
-  if (loading) {
+  if (loading || !isClient) {
+    let path = "";
     if (typeof window !== "undefined") {
-      const pathname = window.location.pathname;
-      if (pathname.startsWith('/dashboard')) return <DashboardSkeleton />;
-      if (pathname === '/login' || pathname === '/signup') return <AuthFormSkeleton />;
+      path = window.location.pathname;
     }
+    
+    if (path.startsWith('/dashboard')) return <DashboardSkeleton />;
+    if (path.startsWith('/login') || path.startsWith('/signup')) return <AuthFormSkeleton />;
+    
     return (
       <div className="flex min-h-screen w-full items-center justify-center bg-background">
           <AnimatedLogoLoader />

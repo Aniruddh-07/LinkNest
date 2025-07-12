@@ -109,7 +109,7 @@ export default function LandingPage() {
             </div>
         </section>
         
-        <div className="hidden">
+        <div>
             <section id="testimonials" className="container mx-auto px-6 py-24">
                 <div className="max-w-4xl mx-auto">
                     <div className="text-center mb-16">

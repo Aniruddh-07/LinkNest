@@ -4,6 +4,7 @@ import { LinkNestIcon, GithubIcon } from "@/components/icons";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, Link as LinkIcon, Users, Video, File, Mic, Heart } from "lucide-react";
+import { FeedbackCarousel } from "@/components/landing/feedback-carousel";
 
 function LandingNavbar() {
   return (
@@ -107,6 +108,19 @@ export default function LandingPage() {
                 </div>
             </div>
         </section>
+        
+        <div className="hidden">
+            <section id="testimonials" className="container mx-auto px-6 py-24">
+                <div className="max-w-4xl mx-auto">
+                    <div className="text-center mb-16">
+                        <h2 className="text-4xl font-bold tracking-tight">What Our Users Are Saying</h2>
+                        <p className="mt-4 text-lg text-muted-foreground">Real feedback from real users.</p>
+                    </div>
+                    <FeedbackCarousel />
+                </div>
+            </section>
+        </div>
+
 
         <section className="container mx-auto px-6 py-24">
             <div className="bg-muted/60 rounded-xl p-8 md:p-12">

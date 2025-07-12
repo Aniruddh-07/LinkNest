@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LinkNestIcon } from "@/components/icons";
-import { useAuth, FirebaseWarning } from "@/context/AuthContext";
+import { useAuth, FirebaseWarning, AuthFormSkeleton } from "@/context/AuthContext";
 import { useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 
 export function LoginForm() {
   const router = useRouter();
-  const { login, sendPasswordReset, isFirebaseConfigured } = useAuth();
+  const { login, sendPasswordReset, isFirebaseConfigured, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("test@example.com");
   const [password, setPassword] = useState("password");
   const [error, setError] = useState<string | null>(null);
@@ -65,15 +65,20 @@ export function LoginForm() {
       setIsLoading(false);
     }
   }
+  
+  const totalLoading = authLoading || isLoading;
+  const isFormDisabled = totalLoading || !isFirebaseConfigured;
 
-  const isFormDisabled = isLoading || !isFirebaseConfigured;
+  if (authLoading) {
+    return <AuthFormSkeleton />;
+  }
 
   return (
     <Card className="mx-auto max-w-sm w-full">
       <CardHeader className="space-y-1 text-center">
         <div className="flex justify-center items-center gap-2">
             <LinkNestIcon className="h-8 w-8 text-primary" />
-            <CardTitle className="text-2xl font-bold">LinkNest</CardTitle>
+            <CardTitle className="text-2xl font-bold">Login</CardTitle>
         </div>
         <CardDescription>Enter your email below to login to your account</CardDescription>
       </CardHeader>
@@ -105,7 +110,7 @@ export function LoginForm() {
             <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={isFormDisabled} />
           </div>
           <Button type="submit" className="w-full" disabled={isFormDisabled}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {totalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Login
           </Button>
         </form>

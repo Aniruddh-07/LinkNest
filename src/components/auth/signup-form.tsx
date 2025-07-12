@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LinkNestIcon } from "../icons";
-import { useAuth, FirebaseWarning } from "@/context/AuthContext";
+import { useAuth, FirebaseWarning, AuthFormSkeleton } from "@/context/AuthContext";
 import { useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 
 export function SignupForm() {
   const router = useRouter();
-  const { signup, isFirebaseConfigured } = useAuth();
+  const { signup, isFirebaseConfigured, loading: authLoading } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -40,7 +40,7 @@ export function SignupForm() {
       if (result.success) {
         setMessage("Account created! Please check your email to verify your account before logging in.");
         // Optionally redirect to a "check your email" page or the login page
-        // router.push("/"); 
+        // router.push("/login"); 
       } else {
         setError(result.error || "An unknown error occurred.");
       }
@@ -51,14 +51,19 @@ export function SignupForm() {
     }
   };
   
-  const isFormDisabled = isLoading || !isFirebaseConfigured;
+  const totalLoading = authLoading || isLoading;
+  const isFormDisabled = totalLoading || !isFirebaseConfigured;
+  
+  if (authLoading) {
+    return <AuthFormSkeleton />;
+  }
 
   return (
     <Card className="mx-auto max-w-sm w-full">
       <CardHeader className="space-y-1 text-center">
       <div className="flex justify-center items-center gap-2">
             <LinkNestIcon className="h-8 w-8 text-primary" />
-            <CardTitle className="text-2xl font-bold">LinkNest</CardTitle>
+            <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
         </div>
         <CardDescription>Enter your information to create an account</CardDescription>
       </CardHeader>
@@ -89,13 +94,13 @@ export function SignupForm() {
             <Input id="password" type="password" required value={password} onChange={e => setPassword(e.target.value)} disabled={isFormDisabled} />
           </div>
           <Button type="submit" className="w-full" disabled={isFormDisabled}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {totalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Create an account
           </Button>
         </form>
         <div className="mt-4 text-center text-sm">
           Already have an account?{" "}
-          <Link href="/" className={cn(isFormDisabled && "pointer-events-none opacity-50", "underline")}>
+          <Link href="/login" className={cn(isFormDisabled && "pointer-events-none opacity-50", "underline")}>
             Login
           </Link>
         </div>

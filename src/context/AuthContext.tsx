@@ -16,8 +16,10 @@ import {
 } from 'firebase/auth';
 import { getFirebaseApp, checkFirebaseConfiguration } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { DashboardSkeleton } from '@/components/loaders';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // --- Auth Context ---
 interface AuthContextType {
@@ -133,10 +135,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   if (loading) {
+    // Determine which loader to show based on the current path
+    if (typeof window !== "undefined") {
+      const pathname = window.location.pathname;
+      if (pathname === '/login' || pathname === '/signup') {
+        return <AuthFormSkeleton />;
+      }
+      if (pathname.startsWith('/dashboard')) {
+        return <DashboardSkeleton />;
+      }
+    }
+    // Default to the main logo loader for the landing page
     return (
-        <div className="flex min-h-screen w-full items-center justify-center bg-background">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        </div>
+      <div className="flex min-h-screen w-full items-center justify-center bg-background">
+          <AnimatedLogoLoader />
+      </div>
     );
   }
 
@@ -161,4 +174,64 @@ export const FirebaseWarning = () => (
             file and ensure the application has been restarted.
         </AlertDescription>
     </Alert>
+);
+
+export const AuthFormSkeleton = () => (
+  <Card className="mx-auto max-w-sm w-full">
+    <CardHeader className="space-y-2 text-center">
+      <div className="flex justify-center">
+        <Skeleton className="h-8 w-8 rounded-full" />
+      </div>
+      <Skeleton className="h-6 w-32 mx-auto" />
+      <Skeleton className="h-4 w-48 mx-auto" />
+    </CardHeader>
+    <CardContent className="space-y-4">
+        <div className="space-y-2">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-10 w-full" />
+        </div>
+         <div className="space-y-2">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-10 w-full" />
+        </div>
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-4 w-full" />
+    </CardContent>
+  </Card>
 )
+
+export function AnimatedLogoLoader() {
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-4">
+      <style jsx>{`
+        .icon-container {
+          animation: bounce 2s infinite ease-in-out;
+        }
+        .text-container span {
+          opacity: 0;
+          animation: fadeIn 1s forwards;
+        }
+        @keyframes bounce {
+          0%, 20%, 50%, 80%, 100% {
+            transform: translateY(0);
+          }
+          40% {
+            transform: translateY(-20px);
+          }
+          60% {
+            transform: translateY(-10px);
+          }
+        }
+        @keyframes fadeIn {
+          to {
+            opacity: 1;
+          }
+        }
+      `}</style>
+      <div className="icon-container">
+        <Skeleton className="h-16 w-16 rounded-full" />
+      </div>
+       <Skeleton className="h-8 w-40" />
+    </div>
+  );
+}

@@ -28,14 +28,42 @@ import { cn } from "@/lib/utils";
 import { useRooms, type Label as RoomLabel } from "@/context/RoomContext";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useAuth } from "@/context/AuthContext";
+import { Skeleton } from "./ui/skeleton";
 
+
+const SidebarSkeleton = () => {
+    return (
+       <aside className="hidden w-64 flex-col border-r bg-background sm:flex p-4">
+            <div className="flex h-[60px] items-center border-b px-2">
+                <Skeleton className="h-8 w-8 rounded-full mr-2" />
+                <Skeleton className="h-6 w-24" />
+            </div>
+            <div className="flex-1 space-y-2 py-2 px-2">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-4 w-20 mt-4 mb-2" />
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+            </div>
+             <div className="mt-auto p-2">
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="space-y-1">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-3 w-32" />
+                    </div>
+                </div>
+            </div>
+       </aside>
+    )
+}
 
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const { rooms, removeFromJoined, deleteRoom, labels, addLabel, assignLabelToRoom, roomLabelAssignments } = useRooms();
   const { setTheme } = useTheme();
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
 
   const [isLabelDialogOpen, setIsLabelDialogOpen] = useState(false);
   const [newLabelName, setNewLabelName] = useState("");
@@ -143,14 +171,8 @@ export function Sidebar() {
     )
   }
 
-  if (!user) {
-    return (
-       <aside className="hidden w-64 flex-col border-r bg-background sm:flex p-4">
-        <div className="flex-1 flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-       </aside>
-    )
+  if (loading || !user) {
+    return <SidebarSkeleton />
   }
 
   return (

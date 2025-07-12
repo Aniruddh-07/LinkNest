@@ -1,9 +1,9 @@
 
 import { Button } from "@/components/ui/button";
-import { LinkNestIcon } from "@/components/icons";
+import { LinkNestIcon, GithubIcon } from "@/components/icons";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Link as LinkIcon, Users, Video, File, Mic } from "lucide-react";
+import { Check, Link as LinkIcon, Users, Video, File, Mic, Heart } from "lucide-react";
 
 function LandingNavbar() {
   return (
@@ -32,7 +32,10 @@ function LandingFooter() {
             <LinkNestIcon className="h-6 w-6 text-primary" />
             <span className="text-lg font-bold">LinkNest</span>
         </div>
-        <p className="text-muted-foreground text-sm">© {new Date().getFullYear()} LinkNest. All rights reserved.</p>
+        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <Link href="/contact" className="hover:text-primary transition-colors">Contact</Link>
+            <p>© {new Date().getFullYear()} LinkNest. All rights reserved.</p>
+        </div>
       </div>
     </footer>
   )
@@ -105,7 +108,33 @@ export default function LandingPage() {
             </div>
         </section>
 
-         <section className="container mx-auto px-6 py-24">
+        <section className="container mx-auto px-6 py-24">
+            <div className="bg-muted/60 rounded-xl p-8 md:p-12">
+                <div className="grid md:grid-cols-2 gap-8 items-center">
+                    <div className="space-y-4">
+                        <div className="inline-flex items-center rounded-lg bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+                            <Heart className="h-4 w-4 mr-2" /> Open Source
+                        </div>
+                        <h2 className="text-3xl font-bold tracking-tight">Help LinkNest Grow</h2>
+                        <p className="text-muted-foreground">
+                            Like this project? It's open source! Show your support by starring it on GitHub, or consider contributing to make it even better. Your help is greatly appreciated!
+                        </p>
+                    </div>
+                    <div className="flex flex-col items-center justify-center gap-4">
+                        <Button asChild size="lg" className="w-full max-w-xs">
+                            <a href="https://github.com/your-repo/linknest" target="_blank" rel="noopener noreferrer">
+                                <GithubIcon className="mr-2 h-5 w-5"/>
+                                Star on GitHub
+                            </a>
+                        </Button>
+                        <p className="text-sm text-muted-foreground">Found a bug? <Link href="/contact" className="underline hover:text-primary">Let us know!</Link></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+         <section className="container mx-auto px-6 py-24 pt-0">
           <div className="text-center">
             <h2 className="text-4xl font-bold tracking-tight">Ready to Get Started?</h2>
             <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">

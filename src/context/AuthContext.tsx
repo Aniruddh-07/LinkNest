@@ -136,6 +136,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const authInstance = ensureAuthInitialized();
       const userCredential = await createUserWithEmailAndPassword(authInstance, email, password);
       await updateFirebaseProfile(userCredential.user, { displayName: name });
+      // Only send verification for email/password signup
       await sendEmailVerification(userCredential.user);
       setUser({ ...userCredential.user, displayName: name });
       return { success: true };
@@ -149,9 +150,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
      const authInstance = ensureAuthInitialized();
       const userCredential = await signInWithEmailAndPassword(authInstance, email, password);
+      // For email/password login, we can still gently remind them to verify if they haven't.
       if (!userCredential.user.emailVerified) {
-        // Allow login but maybe show a banner in-app later. For now, let's let them in.
-        // return { success: false, error: "Please verify your email before logging in. Check your inbox for a verification link." };
+        console.log("User has not verified their email.");
+        // We will let them in, but you could show a banner in-app.
       }
       return { success: true };
     } catch (error: any) {
@@ -164,6 +166,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
         const authInstance = ensureAuthInitialized();
         await signInWithPopup(authInstance, provider);
+        // Social provider emails are pre-verified, so no need for sendEmailVerification
         return { success: true };
     } catch (error: any) {
          if (error.code === 'auth/account-exists-with-different-credential') {
@@ -212,7 +215,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signInWithGitHub,
   };
 
-  if (loading || !isClient) {
+  if (!isClient) {
+    return <AuthLoader />;
+  }
+
+  if (loading) {
     return <AuthLoader />;
   }
 
@@ -240,32 +247,7 @@ export const FirebaseWarning = () => (
 );
 
 export const AuthFormSkeleton = () => (
-  <Card className="mx-auto max-w-sm w-full">
-    <CardHeader className="space-y-2 text-center">
-      <div className="flex justify-center mb-2">
-        <Skeleton className="h-8 w-8 rounded-full" />
-      </div>
-      <Skeleton className="h-6 w-32 mx-auto" />
-      <Skeleton className="h-4 w-48 mx-auto" />
-    </CardHeader>
-    <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-        </div>
-        <div className="h-5 flex items-center">
-            <Skeleton className="h-px w-full" />
-        </div>
-        <div className="space-y-2">
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-10 w-full" />
-        </div>
-         <div className="space-y-2">
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-10 w-full" />
-        </div>
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-4 w-40 mx-auto" />
-    </CardContent>
-  </Card>
-)
+    <div className="flex min-h-screen w-full items-center justify-center bg-muted/40">
+        <AnimatedLogoLoader message="Loading form..." />
+    </div>
+);

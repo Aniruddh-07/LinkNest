@@ -17,7 +17,7 @@ import {
   type User,
   type Auth
 } from 'firebase/auth';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { DashboardSkeleton, AnimatedLogoLoader } from '@/components/loaders';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -76,6 +76,19 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const AuthLoader = () => {
+  const pathname = usePathname();
+  if (pathname.startsWith('/dashboard')) return <DashboardSkeleton />;
+  if (pathname.startsWith('/login') || pathname.startsWith('/signup')) return <AuthFormSkeleton />;
+  
+  return (
+    <div className="flex min-h-screen w-full items-center justify-center bg-background">
+      <AnimatedLogoLoader />
+    </div>
+  );
+};
+
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -200,19 +213,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   if (loading || !isClient) {
-    let path = "";
-    if (typeof window !== "undefined") {
-      path = window.location.pathname;
-    }
-    
-    if (path.startsWith('/dashboard')) return <DashboardSkeleton />;
-    if (path.startsWith('/login') || path.startsWith('/signup')) return <AuthFormSkeleton />;
-    
-    return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-background">
-          <AnimatedLogoLoader />
-      </div>
-    );
+    return <AuthLoader />;
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

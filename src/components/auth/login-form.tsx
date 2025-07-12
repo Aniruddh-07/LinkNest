@@ -39,14 +39,12 @@ export function LoginForm() {
   const [email, setEmail] = useState("test@example.com");
   const [password, setPassword] = useState("password");
   const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSocialLoading, setIsSocialLoading] = useState<false | 'google' | 'github'>(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
-    setMessage(null);
     setIsLoading(true);
     try {
       const result = await login(email, password);
@@ -65,7 +63,6 @@ export function LoginForm() {
   const handleSocialLogin = async (provider: 'google' | 'github') => {
       if (isSocialLoading) return;
       setError(null);
-      setMessage(null);
       setIsSocialLoading(provider);
       try {
           const result = provider === 'google' ? await signInWithGoogle() : await signInWithGitHub();
@@ -80,24 +77,6 @@ export function LoginForm() {
           setIsSocialLoading(false);
       }
   };
-
-  const handleForgotPassword = async () => {
-    if (!email) {
-      setError("Please enter your email address to reset your password.");
-      return;
-    }
-    setError(null);
-    setMessage(null);
-    setIsLoading(true);
-    // try {
-    //   await sendPasswordReset(email);
-    //   setMessage("Password reset email sent. Please check your inbox.");
-    // } catch (err: any) {
-    //   setError(err.message || "Failed to send password reset email.");
-    // } finally {
-    //   setIsLoading(false);
-    // }
-  }
   
   const totalLoading = authLoading || isLoading;
   const isFormDisabled = totalLoading || isSocialLoading || !isFirebaseConfigured;
@@ -121,11 +100,6 @@ export function LoginForm() {
             <Alert variant="destructive" className="mb-4">
                 <AlertTitle>Login Failed</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
-            </Alert>
-        )}
-        {message && (
-            <Alert className="mb-4">
-                <AlertDescription>{message}</AlertDescription>
             </Alert>
         )}
         <div className="grid grid-cols-2 gap-4 mb-4">
@@ -154,9 +128,9 @@ export function LoginForm() {
           <div className="space-y-2">
             <div className="flex items-center">
               <Label htmlFor="password">Password</Label>
-              <Button type="button" variant="link" className="ml-auto inline-block text-sm underline h-auto p-0" onClick={handleForgotPassword} disabled={isFormDisabled}>
+              <Link href="/forgot-password" className="ml-auto inline-block text-sm underline h-auto p-0">
                 Forgot your password?
-              </Button>
+              </Link>
             </div>
             <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={isFormDisabled} />
           </div>

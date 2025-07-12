@@ -10,6 +10,8 @@ import {
   signOut, 
   sendEmailVerification,
   sendPasswordResetEmail,
+  verifyPasswordResetCode as verifyFirebaseCode,
+  confirmPasswordReset as confirmFirebaseReset,
   updateProfile as updateFirebaseProfile,
   signInWithPopup,
   GoogleAuthProvider,
@@ -20,7 +22,6 @@ import {
 import { usePathname, useRouter } from 'next/navigation';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { DashboardSkeleton, AnimatedLogoLoader } from '@/components/loaders';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // --- Firebase Initialization ---
@@ -73,6 +74,9 @@ interface AuthContextType {
   updateProfile: (profileData: { displayName?: string; photoURL?: string }) => Promise<void>;
   signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   signInWithGitHub: () => Promise<{ success: boolean; error?: string }>;
+  sendPasswordReset: (email: string) => Promise<{ success: boolean, error?: string }>;
+  verifyPasswordResetCode: (code: string) => Promise<{ success: boolean, error?: string }>;
+  confirmPasswordReset: (code: string, newPassword: string) => Promise<{ success: boolean, error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -80,13 +84,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const AuthLoader = () => {
   const pathname = usePathname();
   if (pathname.startsWith('/dashboard')) return <DashboardSkeleton />;
-  if (pathname.startsWith('/login') || pathname.startsWith('/signup')) return <AuthFormSkeleton />;
-  
-  return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-background">
-      <AnimatedLogoLoader />
-    </div>
-  );
+  return <AnimatedLogoLoader />;
 };
 
 
@@ -150,10 +148,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
      const authInstance = ensureAuthInitialized();
       const userCredential = await signInWithEmailAndPassword(authInstance, email, password);
-      // For email/password login, we can still gently remind them to verify if they haven't.
       if (!userCredential.user.emailVerified) {
         console.log("User has not verified their email.");
-        // We will let them in, but you could show a banner in-app.
       }
       return { success: true };
     } catch (error: any) {
@@ -166,7 +162,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
         const authInstance = ensureAuthInitialized();
         await signInWithPopup(authInstance, provider);
-        // Social provider emails are pre-verified, so no need for sendEmailVerification
         return { success: true };
     } catch (error: any) {
          if (error.code === 'auth/account-exists-with-different-credential') {
@@ -185,6 +180,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const provider = new GithubAuthProvider();
     return socialSignIn(provider);
   }
+  
+  const sendPasswordReset = async (email: string) => {
+    if (!isFirebaseConfigured) return { success: false, error: "Firebase is not configured." };
+    try {
+        const authInstance = ensureAuthInitialized();
+        await sendPasswordResetEmail(authInstance, email);
+        return { success: true };
+    } catch(error: any) {
+        return { success: false, error: error.message };
+    }
+  }
+
+  const verifyPasswordResetCode = async (code: string) => {
+      if (!isFirebaseConfigured) return { success: false, error: "Firebase is not configured." };
+      try {
+          const authInstance = ensureAuthInitialized();
+          await verifyFirebaseCode(authInstance, code);
+          return { success: true };
+      } catch (error: any) {
+          return { success: false, error: error.message };
+      }
+  };
+  
+  const confirmPasswordReset = async (code: string, newPassword: string) => {
+      if (!isFirebaseConfigured) return { success: false, error: "Firebase is not configured." };
+      try {
+          const authInstance = ensureAuthInitialized();
+          await confirmFirebaseReset(authInstance, code, newPassword);
+          return { success: true };
+      } catch (error: any) {
+          return { success: false, error: error.message };
+      }
+  };
+
 
   const logout = async () => {
     const authInstance = ensureAuthInitialized();
@@ -213,13 +242,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     updateProfile,
     signInWithGoogle,
     signInWithGitHub,
+    sendPasswordReset,
+    verifyPasswordResetCode,
+    confirmPasswordReset,
   };
 
-  if (!isClient) {
-    return <AuthLoader />;
-  }
-
-  if (loading) {
+  if (!isClient || loading) {
     return <AuthLoader />;
   }
 

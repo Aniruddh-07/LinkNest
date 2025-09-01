@@ -81,16 +81,14 @@ export default function FriendsPage() {
         router.push(`/dashboard/rooms/${newRoom.id}`);
     }
 
-    const handleStartChat = () => {
-        if (selectedFriends.length !== 1) return;
-        toast({ title: `Starting chat with ${selectedFriends[0].name}...` });
+    const handleStartChat = (friend: Friend) => {
+        toast({ title: `Starting chat with ${friend.name}...` });
         // In a real app, this would navigate to a 1-on-1 chat page.
         // For now, we'll just show a toast.
     }
     
-    const handleStartCall = () => {
-        if (selectedFriends.length !== 1) return;
-        toast({ title: `Starting call with ${selectedFriends[0].name}...` });
+    const handleStartCall = (friend: Friend) => {
+        toast({ title: `Starting call with ${friend.name}...` });
         // In a real app, this would initiate a WebRTC call.
         // For now, we'll just show a toast.
     }
@@ -113,29 +111,13 @@ export default function FriendsPage() {
                         <CardHeader className="flex flex-row items-center justify-between">
                             <div>
                                 <CardTitle>Your Friends ({friends.length})</CardTitle>
-                                <CardDescription>Select friends to start a conversation or create a group.</CardDescription>
+                                <CardDescription>Select friends to create a group room.</CardDescription>
                             </div>
-                            {selectedFriends.length > 0 && (
-                                <div className="flex gap-2">
-                                     {selectedFriends.length === 1 && (
-                                        <>
-                                            <Button variant="outline" size="sm" onClick={handleStartChat}>
-                                                <MessageSquare className="mr-2 h-4 w-4"/>
-                                                Start Chat
-                                            </Button>
-                                            <Button variant="outline" size="sm" onClick={handleStartCall}>
-                                                <Phone className="mr-2 h-4 w-4"/>
-                                                Start Call
-                                            </Button>
-                                        </>
-                                    )}
-                                    {selectedFriends.length > 1 && (
-                                        <Button size="sm" onClick={handleCreateGroupRoom}>
-                                            <Users2 className="mr-2 h-4 w-4" />
-                                            Create Group Room ({selectedFriends.length})
-                                        </Button>
-                                    )}
-                                </div>
+                            {selectedFriends.length > 1 && (
+                                <Button size="sm" onClick={handleCreateGroupRoom}>
+                                    <Users2 className="mr-2 h-4 w-4" />
+                                    Create Group Room ({selectedFriends.length})
+                                </Button>
                             )}
                         </CardHeader>
                         <CardContent>
@@ -156,10 +138,20 @@ export default function FriendsPage() {
                                                 <p className="font-medium">{friend.name}</p>
                                                 <p className="text-xs text-muted-foreground">{friend.email}</p>
                                             </div>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleRemoveFriend(friend.email)}>
-                                                <X className="h-4 w-4" />
-                                                <span className="sr-only">Remove Friend</span>
-                                            </Button>
+                                            <div className="flex items-center gap-1">
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleStartChat(friend)}>
+                                                    <MessageSquare className="h-4 w-4" />
+                                                    <span className="sr-only">Start Chat</span>
+                                                </Button>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleStartCall(friend)}>
+                                                    <Phone className="h-4 w-4" />
+                                                    <span className="sr-only">Start Call</span>
+                                                </Button>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleRemoveFriend(friend.email)}>
+                                                    <X className="h-4 w-4" />
+                                                    <span className="sr-only">Remove Friend</span>
+                                                </Button>
+                                            </div>
                                         </div>
                                     ))
                                 ) : (

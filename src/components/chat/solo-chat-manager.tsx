@@ -33,12 +33,13 @@ export function SoloChatManager() {
     }
 
     return (
-        <div className="fixed bottom-0 right-4 flex items-end gap-4 z-[100]">
-            {openChats.map((partner) => (
+        <div className="fixed bottom-0 right-0 h-0 w-0">
+            {openChats.map((partner, index) => (
                 <SoloChatBox
                     key={partner.email}
                     friend={partner}
                     onClose={closeSoloChat}
+                    defaultPosition={{ x: -(index * 336 + 16), y: -448 }}
                 />
             ))}
         </div>

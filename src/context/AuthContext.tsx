@@ -30,28 +30,17 @@ import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 let app: FirebaseApp | null = null;
 
 const checkFirebaseConfiguration = (): boolean => {
-    return (
-      !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
-      !!process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
-      !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
-    );
+    return true; // Mocked for now
 };
 
 const getFirebaseApp = (): FirebaseApp | null => {
     if (app) return app;
 
-    if (!checkFirebaseConfiguration()) {
-        console.error("Firebase configuration is missing or incomplete.");
-        return null;
-    }
-
+    // Mock config to prevent errors
     const firebaseConfig = {
-        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-        messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-        appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+        apiKey: "test",
+        authDomain: "test.firebaseapp.com",
+        projectId: "test",
     };
     
     if (getApps().length > 0) {
@@ -85,36 +74,37 @@ const AuthLoader = () => {
   return <AnimatedLogoLoader />;
 };
 
+const mockUser = {
+  uid: 'test-user-123',
+  email: 'test@example.com',
+  displayName: 'Test User',
+  emailVerified: true,
+  // Add other properties as needed by your app, matching the Firebase User type
+  photoURL: null,
+  providerId: 'password',
+  metadata: {},
+  providerData: [],
+  refreshToken: '',
+  tenantId: null,
+  delete: () => Promise.resolve(),
+  getIdToken: () => Promise.resolve('mock-token'),
+  getIdTokenResult: () => Promise.resolve({ token: 'mock-token', claims: {}, authTime: '', expirationTime: '', issuedAtTime: '', signInProvider: null, signInSecondFactor: null}),
+  reload: () => Promise.resolve(),
+  toJSON: () => ({}),
+} as User;
+
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isFirebaseConfigured, setIsFirebaseConfigured] = useState(false);
+  const [isFirebaseConfigured, setIsFirebaseConfigured] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    const configured = checkFirebaseConfiguration();
-    setIsFirebaseConfigured(configured);
-
-    if (!configured) {
-        setLoading(false);
-        return;
-    }
-
-    const app = getFirebaseApp();
-    if (!app) {
-        setLoading(false);
-        return;
-    }
-    
-    const auth = getAuth(app);
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
+    // Mocking the auth state
+    setUser(mockUser);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -132,115 +122,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   }, [user, loading, pathname, router]);
   
-  const ensureAuthInitialized = (): Auth => {
-    const app = getFirebaseApp();
-    if (!app) {
-        throw new Error("Firebase App is not initialized. Check your .env file.");
-    }
-    return getAuth(app);
-  }
-
+  
+  // Mocked functions
   const signup = async (email: string, password: string, name: string) => {
-    if (!isFirebaseConfigured) return { success: false, error: "Firebase is not configured." };
-    try {
-      const authInstance = ensureAuthInitialized();
-      const userCredential = await createUserWithEmailAndPassword(authInstance, email, password);
-      await updateFirebaseProfile(userCredential.user, { displayName: name });
-      
-      // Only send verification for password-based accounts
-      if (userCredential.user.providerData.some(p => p.providerId === 'password')) {
-        await sendEmailVerification(userCredential.user);
-      }
-
-      setUser({ ...userCredential.user, displayName: name });
-      return { success: true };
-    } catch (error: any) {
-      return { success: false, error: error.message };
-    }
+    console.log("Signup called (mocked)", { email, name });
+    setUser(mockUser);
+    return { success: true };
   };
 
   const login = async (email: string, password: string) => {
-    if (!isFirebaseConfigured) return { success: false, error: "Firebase is not configured." };
-    try {
-     const authInstance = ensureAuthInitialized();
-      await signInWithEmailAndPassword(authInstance, email, password);
-      return { success: true };
-    } catch (error: any) {
-      return { success: false, error: error.message };
-    }
+    console.log("Login called (mocked)", { email });
+    setUser(mockUser);
+    return { success: true };
   };
 
-  const socialSignIn = async (provider: GoogleAuthProvider | GithubAuthProvider) => {
-    if (!isFirebaseConfigured) return { success: false, error: "Firebase is not configured." };
-    try {
-        const authInstance = ensureAuthInitialized();
-        await signInWithPopup(authInstance, provider);
-        return { success: true };
-    } catch (error: any) {
-         if (error.code === 'auth/account-exists-with-different-credential') {
-            return { success: false, error: "An account already exists with the same email address but different sign-in credentials." };
-         }
-        return { success: false, error: error.message };
-    }
+  const socialSignIn = async (provider: 'google' | 'github') => {
+    console.log(`Social sign-in with ${provider} (mocked)`);
+    setUser(mockUser);
+    return { success: true };
   }
 
-  const signInWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    return socialSignIn(provider);
-  }
-
-  const signInWithGitHub = async () => {
-    const provider = new GithubAuthProvider();
-    return socialSignIn(provider);
-  }
+  const signInWithGoogle = async () => socialSignIn('google');
+  const signInWithGitHub = async () => socialSignIn('github');
   
   const sendPasswordReset = async (email: string) => {
-    if (!isFirebaseConfigured) return { success: false, error: "Firebase is not configured." };
-    try {
-        const authInstance = ensureAuthInitialized();
-        await sendPasswordResetEmail(authInstance, email);
-        return { success: true };
-    } catch(error: any) {
-        return { success: false, error: error.message };
-    }
+    console.log("Password reset sent (mocked)", { email });
+    return { success: true };
   }
 
   const verifyPasswordResetCode = async (code: string) => {
-      if (!isFirebaseConfigured) return { success: false, error: "Firebase is not configured." };
-      try {
-          const authInstance = ensureAuthInitialized();
-          await verifyFirebaseCode(authInstance, code);
-          return { success: true };
-      } catch (error: any) {
-          return { success: false, error: error.message };
-      }
+      return { success: true };
   };
   
   const confirmPasswordReset = async (code: string, newPassword: string) => {
-      if (!isFirebaseConfigured) return { success: false, error: "Firebase is not configured." };
-      try {
-          const authInstance = ensureAuthInitialized();
-          await confirmFirebaseReset(authInstance, code, newPassword);
-          return { success: true };
-      } catch (error: any) {
-          return { success: false, error: error.message };
-      }
+      return { success: true };
   };
 
-
   const logout = async () => {
-    const authInstance = ensureAuthInitialized();
-    await signOut(authInstance);
+    console.log("Logout called (mocked)");
+    setUser(null);
   };
   
   const updateProfile = async (profileData: { displayName?: string; photoURL?: string }) => {
-    const authInstance = ensureAuthInitialized();
-    if (authInstance.currentUser) {
-      await updateFirebaseProfile(authInstance.currentUser, profileData);
-      const refreshedUser = { ...authInstance.currentUser };
-      setUser(refreshedUser);
-    } else {
-      throw new Error("No user is currently signed in.");
+    console.log("Profile updated (mocked)", profileData);
+    if(user) {
+      setUser({ ...user, ...profileData });
     }
   };
 
@@ -288,26 +214,6 @@ export const FirebaseWarning = () => (
 
 export const AuthFormSkeleton = () => {
     return (
-        <Card className="mx-auto max-w-sm w-full">
-            <CardHeader className="space-y-2 text-center">
-                <div className="flex justify-center mb-2">
-                    <Skeleton className="h-8 w-8 rounded-full" />
-                </div>
-                <Skeleton className="h-6 w-28 mx-auto" />
-                <Skeleton className="h-4 w-48 mx-auto" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="space-y-2">
-                    <Skeleton className="h-4 w-12" />
-                    <Skeleton className="h-10 w-full" />
-                </div>
-                <div className="space-y-2">
-                    <Skeleton className="h-4 w-12" />
-                    <Skeleton className="h-10 w-full" />
-                </div>
-                <Skeleton className="h-10 w-full" />
-                 <Skeleton className="h-4 w-40 mx-auto" />
-            </CardContent>
-        </Card>
+       <AnimatedLogoLoader message="Authenticating..."/>
     )
 };

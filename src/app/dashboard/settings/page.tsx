@@ -168,8 +168,8 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <div className="grid gap-8 md:grid-cols-2">
-        <div className="space-y-8 md:col-span-1">
+      <div className="grid gap-8 lg:grid-cols-2">
+        <div className="space-y-8">
             <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -273,7 +273,7 @@ export default function SettingsPage() {
             </Card>
         </div>
         
-        <Card className="md:col-span-1">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText /> Data Management

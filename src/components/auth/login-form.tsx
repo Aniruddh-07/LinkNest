@@ -34,7 +34,6 @@ function GoogleIcon() {
 }
 
 export function LoginForm() {
-  const router = useRouter();
   const { login, signInWithGoogle, signInWithGitHub, isFirebaseConfigured, loading: authLoading } = useAuth();
   const [email, setEmail] = useState("test@example.com");
   const [password, setPassword] = useState("password");
@@ -48,9 +47,7 @@ export function LoginForm() {
     setIsLoading(true);
     try {
       const result = await login(email, password);
-      if (result.success) {
-        router.push("/dashboard");
-      } else {
+      if (!result.success) {
         setError(result.error || "An unknown error occurred.");
       }
     } catch (err: any) {
@@ -66,9 +63,7 @@ export function LoginForm() {
       setIsSocialLoading(provider);
       try {
           const result = provider === 'google' ? await signInWithGoogle() : await signInWithGitHub();
-          if (result.success) {
-              router.push("/dashboard");
-          } else {
+          if (!result.success) {
               setError(result.error || `Failed to sign in with ${provider}.`);
           }
       } catch (err: any) {
@@ -81,7 +76,7 @@ export function LoginForm() {
   const totalLoading = authLoading || isLoading;
   const isFormDisabled = totalLoading || isSocialLoading || !isFirebaseConfigured;
 
-  if (authLoading && !isFirebaseConfigured) {
+  if (authLoading) {
     return <AuthFormSkeleton />;
   }
 

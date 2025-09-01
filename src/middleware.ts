@@ -2,29 +2,22 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const protectedRoutes = ['/dashboard'];
-const authRoutes = ['/login', '/signup'];
+// This middleware is no longer strictly necessary with the client-side AuthContext logic,
+// but it provides an extra layer of protection on the server-side.
+// It prevents the dashboard from even being rendered for an unauthenticated user.
+// The client-side logic will still handle the redirect.
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('firebaseIdToken');
   const { pathname } = request.nextUrl;
 
-  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
-  const isAuthRoute = authRoutes.some(route => pathname.startsWith(route));
+  const isProtectedRoute = pathname.startsWith('/dashboard');
 
-  // If user is logged in and tries to access login/signup, redirect to dashboard
-  if (isAuthRoute && token) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/dashboard';
-    return NextResponse.redirect(url);
-  }
-
-  // If user is not logged in and tries to access a protected route, redirect to login
   if (isProtectedRoute && !token) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    return NextResponse.redirect(url);
+    // If trying to access a protected route without a token,
+    // rewrite to the login page. The client-side AuthProvider will handle the actual redirect.
+    return NextResponse.rewrite(new URL('/login', request.url));
   }
 
-  return NextResponse.next()
+  return NextResponse.next();
 }

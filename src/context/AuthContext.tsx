@@ -21,7 +21,7 @@ import {
 } from 'firebase/auth';
 import { usePathname, useRouter } from 'next/navigation';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { DashboardSkeleton, AnimatedLogoLoader } from '@/components/loaders';
+import { AnimatedLogoLoader } from '@/components/loaders';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // --- Firebase Initialization ---
@@ -82,8 +82,6 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AuthLoader = () => {
-  const pathname = usePathname();
-  if (pathname.startsWith('/dashboard')) return <DashboardSkeleton />;
   return <AnimatedLogoLoader />;
 };
 
@@ -92,11 +90,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFirebaseConfigured, setIsFirebaseConfigured] = useState(false);
-  const [isClient, setIsClient] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    setIsClient(true);
     const configured = checkFirebaseConfiguration();
     setIsFirebaseConfigured(configured);
 
@@ -119,6 +116,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (loading) return;
+
+    const isAuthRoute = pathname === '/login' || pathname === '/signup';
+    const isProtectedRoute = pathname.startsWith('/dashboard');
+
+    if (user && isAuthRoute) {
+        router.push('/dashboard');
+    }
+    if (!user && isProtectedRoute) {
+        router.push('/login');
+    }
+
+  }, [user, loading, pathname, router]);
   
   const ensureAuthInitialized = (): Auth => {
     const app = getFirebaseApp();
@@ -134,8 +146,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const authInstance = ensureAuthInitialized();
       const userCredential = await createUserWithEmailAndPassword(authInstance, email, password);
       await updateFirebaseProfile(userCredential.user, { displayName: name });
-      // Only send verification for email/password signup
-      await sendEmailVerification(userCredential.user);
+      
+      if (userCredential.user.providerData.some(p => p.providerId === 'password')) {
+        await sendEmailVerification(userCredential.user);
+      }
+
       setUser({ ...userCredential.user, displayName: name });
       return { success: true };
     } catch (error: any) {
@@ -147,10 +162,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!isFirebaseConfigured) return { success: false, error: "Firebase is not configured." };
     try {
      const authInstance = ensureAuthInitialized();
-      const userCredential = await signInWithEmailAndPassword(authInstance, email, password);
-      if (!userCredential.user.emailVerified) {
-        console.log("User has not verified their email.");
-      }
+      await signInWithEmailAndPassword(authInstance, email, password);
       return { success: true };
     } catch (error: any) {
       return { success: false, error: error.message };
@@ -218,7 +230,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     const authInstance = ensureAuthInitialized();
     await signOut(authInstance);
-    router.push("/");
   };
   
   const updateProfile = async (profileData: { displayName?: string; photoURL?: string }) => {
@@ -247,7 +258,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     confirmPasswordReset,
   };
 
-  if (!isClient || loading) {
+  if (loading) {
     return <AuthLoader />;
   }
 
@@ -274,8 +285,28 @@ export const FirebaseWarning = () => (
     </Alert>
 );
 
-export const AuthFormSkeleton = () => (
-    <div className="flex min-h-screen w-full items-center justify-center bg-muted/40">
-        <AnimatedLogoLoader message="Loading form..." />
-    </div>
-);
+export const AuthFormSkeleton = () => {
+    return (
+        <Card className="mx-auto max-w-sm w-full">
+            <CardHeader className="space-y-2 text-center">
+                <div className="flex justify-center mb-2">
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                </div>
+                <Skeleton className="h-6 w-28 mx-auto" />
+                <Skeleton className="h-4 w-48 mx-auto" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-12" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-12" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <Skeleton className="h-10 w-full" />
+                 <Skeleton className="h-4 w-40 mx-auto" />
+            </CardContent>
+        </Card>
+    )
+};

@@ -1,11 +1,9 @@
-import { AuthProvider } from "@/context/AuthContext";
 import { SignupForm } from "@/components/auth/signup-form";
 import Link from "next/link";
 import { LinkNestIcon } from "@/components/icons";
 
 export default function SignupPage() {
   return (
-    <AuthProvider>
       <main className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
         <div className="absolute top-6 left-6">
             <Link
@@ -18,6 +16,5 @@ export default function SignupPage() {
           </div>
         <SignupForm />
       </main>
-    </AuthProvider>
   );
 }

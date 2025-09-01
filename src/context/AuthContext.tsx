@@ -5,13 +5,15 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import type { User } from 'firebase/auth';
 import { usePathname, useRouter } from 'next/navigation';
 import { AnimatedLogoLoader } from '@/components/loaders';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // --- Auth Context ---
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  isFirebaseConfigured: boolean; // Kept for potential future use
-  signup: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
+  isFirebaseConfigured: boolean;
+  signup: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string; verificationSent?: boolean }>;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   updateProfile: (profileData: { displayName?: string; photoURL?: string }) => Promise<void>;
@@ -25,27 +27,50 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AuthLoader = () => {
-  return <AnimatedLogoLoader message="Loading..." />;
+  return <AnimatedLogoLoader message="Authenticating..." />;
 };
 
+export const AuthFormSkeleton = () => {
+    return (
+        <Card className="mx-auto max-w-sm w-full">
+            <CardHeader className="space-y-2 text-center">
+                <div className="flex justify-center mb-2">
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                </div>
+                <Skeleton className="h-6 w-3/5 mx-auto" />
+                <Skeleton className="h-4 w-4/5 mx-auto" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                 <Skeleton className="h-10 w-full" />
+            </CardContent>
+        </Card>
+    );
+};
+
+
 // This is our hardcoded mock user for testing purposes
-const mockUser = {
+const mockUser: User = {
   uid: 'test-user-123',
   email: 'test@example.com',
   displayName: 'Test User',
   emailVerified: true,
   photoURL: null,
-  providerId: 'password',
-  metadata: {},
   providerData: [],
-  refreshToken: '',
-  tenantId: null,
-  delete: () => Promise.resolve(),
-  getIdToken: () => Promise.resolve('mock-token'),
-  getIdTokenResult: () => Promise.resolve({ token: 'mock-token', claims: {}, authTime: '', expirationTime: '', issuedAtTime: '', signInProvider: null, signInSecondFactor: null}),
-  reload: () => Promise.resolve(),
-  toJSON: () => ({}),
-} as User;
+  // Cast to any to satisfy the complex User type from Firebase
+  // We don't need these methods for the mock.
+} as any;
 
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -54,20 +79,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
   const pathname = usePathname();
 
-  // On initial load, simulate checking for an existing session and set the mock user
+  // On initial load, simulate checking for an existing session.
   useEffect(() => {
-    // In a real app, you'd check localStorage or an API. Here, we just set the mock user.
-    setTimeout(() => {
+    const session = sessionStorage.getItem("mock-auth-session");
+    if (session) {
       setUser(mockUser);
-      setLoading(false);
-    }, 500); // A small delay to simulate network latency
+    }
+    setLoading(false);
   }, []);
 
   // This effect handles routing logic AFTER the initial loading is complete
   useEffect(() => {
     if (loading) return; // Don't do anything while loading
 
-    const isAuthRoute = ['/login', '/signup', '/forgot-password', '/reset-password'].includes(pathname);
+    const isAuthRoute = ['/login', '/signup', '/forgot-password', '/reset-password'].some(p => pathname.startsWith(p));
     const isProtectedRoute = pathname.startsWith('/dashboard');
 
     // If user is logged in and tries to access an auth page, redirect to dashboard
@@ -89,6 +114,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // In the mock, we just pretend the login is successful
     return new Promise<{ success: boolean; }>(resolve => {
         setTimeout(() => {
+            sessionStorage.setItem("mock-auth-session", "true");
             setUser(mockUser);
             setLoading(false);
             resolve({ success: true });
@@ -97,11 +123,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signup = async (email: string, password: string, name: string) => {
-      // For mock purposes, signup also just logs the user in.
-      return login(email, password);
+    const shouldSendVerification = !email.endsWith('@example.com');
+    // For mock purposes, signup also just logs the user in.
+    const result = await login(email, password);
+    return { ...result, verificationSent: shouldSendVerification };
   };
   
   const socialSignIn = async (provider: 'google' | 'github') => {
+      // Don't send verification for social sign-ins
       return login("social@example.com", "password");
   }
 
@@ -115,8 +144,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     setLoading(true);
     setTimeout(() => {
+        sessionStorage.removeItem("mock-auth-session");
         setUser(null);
         setLoading(false);
+        router.push('/login');
     }, 500);
   };
   
@@ -141,9 +172,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     confirmPasswordReset,
   };
   
-  // While loading, show a full-screen loader to prevent content flash
+  const isAuthRoute = ['/login', '/signup', '/forgot-password', '/reset-password'].some(p => pathname.startsWith(p));
+
+  // While loading, show a full-screen loader or a form skeleton on auth pages
   if (loading) {
-    return <AuthLoader />;
+    return isAuthRoute ? <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4"><AuthFormSkeleton /></div> : <AuthLoader />;
+  }
+
+  // If we are on a protected route but have no user, render nothing (the effect will redirect)
+  if (!user && pathname.startsWith('/dashboard')) {
+      return null;
+  }
+  
+  // If we are on an auth route with a user, render nothing (the effect will redirect)
+  if (user && isAuthRoute) {
+      return null;
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -157,6 +200,5 @@ export const useAuth = () => {
   return context;
 };
 
-// These components are not used in the mock flow but kept for structure
+// This component is not used in the mock flow but kept for structure
 export const FirebaseWarning = () => null;
-export const AuthFormSkeleton = () => null;

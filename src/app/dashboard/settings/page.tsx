@@ -409,7 +409,7 @@ export default function SettingsPage() {
                     </TableBody>
                 </Table>
             </div>
-             <div className="flex flex-col sm:flex-row gap-4 justify-between">
+             <div className="flex flex-col md:flex-row gap-4 justify-between">
                 <Button variant="outline" onClick={resetFilters}>
                     <FilterX className="mr-2 h-4 w-4" />
                     Clear Filters
@@ -417,20 +417,20 @@ export default function SettingsPage() {
                 <div className="flex flex-col sm:flex-row gap-4">
                     <Button variant="outline" onClick={handleExport} disabled={filteredData.length === 0}>
                         <Download className="mr-2 h-4 w-4" />
-                        Export All
+                        Export Filtered
                     </Button>
                      <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="destructive" disabled={filteredData.length === 0}>
+                            <Button variant="destructive" disabled={deleteAllSharedData.length === 0}>
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Delete All
+                                Delete Filtered
                             </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete all of your shared data.
+                                This action cannot be undone. This will permanently delete all {filteredData.length} currently visible items.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -472,3 +472,4 @@ export default function SettingsPage() {
     </div>
   );
 }
+

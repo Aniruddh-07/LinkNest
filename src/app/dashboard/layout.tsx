@@ -56,7 +56,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
       <RoomProvider>
         <div className="flex min-h-screen w-full bg-muted/40">
-          <Sidebar />
+          <div className="hidden sm:flex">
+            <Sidebar />
+          </div>
           <div className="flex flex-1 flex-col">
             <DashboardHeader />
             <main className="flex flex-1 flex-col p-4 sm:p-6 overflow-hidden">

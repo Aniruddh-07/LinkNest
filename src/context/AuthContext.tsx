@@ -40,65 +40,27 @@ const mockUser: User = {
 
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(mockUser); // Always logged in with mock user
+  const [loading, setLoading] = useState(false); // Set loading to false as we are not fetching anything
   const router = useRouter();
   const pathname = usePathname();
-
-  // On initial load, simulate checking for an existing session.
-  useEffect(() => {
-    const session = sessionStorage.getItem("mock-auth-session");
-    if (session) {
-      setUser(mockUser);
-    }
-    // Artificial delay to simulate async auth check
-    setTimeout(() => setLoading(false), 500);
-  }, []);
-
-  // This effect handles routing logic AFTER the initial loading is complete
-  useEffect(() => {
-    if (loading) return; // Don't do anything while loading
-
-    const isAuthRoute = ['/login', '/signup', '/forgot-password', '/reset-password'].some(p => pathname.startsWith(p));
-    const isProtectedRoute = pathname.startsWith('/dashboard');
-
-    // If user is logged in and tries to access an auth page, redirect to dashboard
-    if (user && isAuthRoute) {
-        router.push('/dashboard');
-    }
-    
-    // If user is not logged in and tries to access a protected page, redirect to login
-    if (!user && isProtectedRoute) {
-        router.push('/login');
-    }
-
-  }, [user, loading, pathname, router]);
   
-  
+  // No need for effects to check auth status, as we are always logged in.
+
   // --- Mocked Auth Functions ---
   const login = async (email: string, password: string) => {
-    setLoading(true);
-    // In the mock, we just pretend the login is successful
-    return new Promise<{ success: boolean; }>(resolve => {
-        setTimeout(() => {
-            sessionStorage.setItem("mock-auth-session", "true");
-            setUser(mockUser);
-            setLoading(false);
-            resolve({ success: true });
-        }, 500)
-    });
+    console.log("Mock login called, but user is already authenticated.");
+    return { success: true };
   };
 
   const signup = async (email: string, password: string, name: string) => {
-    const shouldSendVerification = !email.endsWith('@example.com');
-    // For mock purposes, signup also just logs the user in.
-    const result = await login(email, password);
-    return { ...result, verificationSent: shouldSendVerification };
+    console.log("Mock signup called, but user is already authenticated.");
+    return { success: true };
   };
   
   const socialSignIn = async (provider: 'google' | 'github') => {
-      // Don't send verification for social sign-ins
-      return login("social@example.com", "password");
+    console.log(`Mock social sign-in with ${provider} called.`);
+    return { success: true };
   }
 
   const signInWithGoogle = () => socialSignIn('google');
@@ -109,13 +71,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const confirmPasswordReset = async (code: string, newPassword: string) => ({ success: true });
 
   const logout = async () => {
-    setLoading(true);
-    setTimeout(() => {
-        sessionStorage.removeItem("mock-auth-session");
-        setUser(null);
-        setLoading(false);
-        router.push('/login');
-    }, 500);
+    console.log("Mock logout called.");
+    // In a real app, this would clear the user state.
+    // For now, we'll keep the user logged in to avoid breaking the flow.
+    router.push('/');
   };
   
   const updateProfile = async (profileData: { displayName?: string; photoURL?: string }) => {

@@ -4,20 +4,25 @@
 import { Sidebar } from "@/components/sidebar";
 import { RoomProvider } from "@/context/RoomContext";
 import { useAuth } from "@/context/AuthContext";
-import { DashboardSkeleton } from "@/components/loaders";
 import { ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
+  const router = useRouter();
 
-  if (loading) {
-    return <DashboardSkeleton />;
-  }
-
+  // In our new "developer mode", user should always exist.
+  // This is a failsafe in case the context hasn't loaded yet,
+  // or if we revert to real auth later.
+  useEffect(() => {
+    if (!user) {
+      router.push('/');
+    }
+  }, [user, router]);
+  
   if (!user) {
-    // AuthProvider will handle the redirect.
-    // Returning null prevents a flash of incorrect content.
-    return null;
+      return null;
   }
 
   return (

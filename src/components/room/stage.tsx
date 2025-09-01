@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Youtube, Link, ScreenShare, UserSquare, VideoOff } from "lucide-react";
+import { Youtube, Link, ScreenShare, UserSquare, VideoOff, Users } from "lucide-react";
 import type { Participant } from "@/context/RoomContext";
 import { useToast } from "@/hooks/use-toast";
 import { useRooms } from "@/context/RoomContext";
@@ -41,7 +41,7 @@ const GalleryView = ({ participants }: { participants: Participant[] }) => {
 
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 border rounded-lg bg-muted/40 h-full">
-            {participants.map(p => (
+            {participants.length > 0 ? participants.map(p => (
                 <div key={p.email} className="relative aspect-video w-full rounded-lg overflow-hidden bg-muted flex items-center justify-center">
                      {(p.isCameraOff) ? (
                          <div className="flex flex-col items-center text-muted-foreground">
@@ -56,7 +56,13 @@ const GalleryView = ({ participants }: { participants: Participant[] }) => {
                      )}
                      <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 rounded-md text-sm font-medium">{p.name}</div>
                 </div>
-            ))}
+            )) : (
+                <div className="col-span-2 flex flex-col items-center justify-center h-full text-muted-foreground">
+                    <Users className="h-16 w-16" />
+                    <p className="mt-4 text-lg font-semibold">Waiting for others to join...</p>
+                    <p className="text-sm">You're the first one here!</p>
+                </div>
+            )}
         </div>
     );
 }

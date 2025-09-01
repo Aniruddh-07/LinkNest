@@ -195,8 +195,23 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
     
     setAllRooms((prev) => [...prev, newRoom]);
     setRooms((prev) => [...prev, newRoom]);
+
+    const me: Participant = {
+        name: userProfile.name,
+        email: userProfile.email,
+        avatar: "https://placehold.co/40x40.png",
+        hint: "user avatar",
+        isHost: true,
+        isMuted: false,
+        isCameraOff: false,
+    };
+    setParticipants(prev => ({
+        ...prev,
+        [newRoom.id]: [me]
+    }));
+
     return newRoom;
-  }, []);
+  }, [userProfile.name, userProfile.email]);
 
   const joinRoom = (room: Room) => {
     if (!rooms.some((r) => r.id === room.id)) {

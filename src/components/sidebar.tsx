@@ -177,7 +177,7 @@ export function Sidebar() {
 
   return (
     <>
-    <aside className="bg-background flex flex-col border-r w-64">
+    <aside className="bg-background flex flex-col border-r h-full">
       <div className="flex h-[60px] items-center border-b px-6">
         <Link
           href="/dashboard"
@@ -265,7 +265,7 @@ export function Sidebar() {
 
         </nav>
       </div>
-      <div className="mt-auto flex flex-col gap-2 p-4">
+      <div className="mt-auto flex flex-col gap-2 p-4 border-t">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -280,7 +280,7 @@ export function Sidebar() {
                 />
                 <AvatarFallback>{user.displayName?.charAt(0) || user.email?.charAt(0)}</AvatarFallback>
               </Avatar>
-              <div className="text-left">
+              <div className="text-left overflow-hidden">
                 <p className="text-sm font-medium truncate">{user.displayName || 'User'}</p>
                 <p className="text-xs text-muted-foreground truncate">
                   {user.email}

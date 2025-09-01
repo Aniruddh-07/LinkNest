@@ -24,8 +24,8 @@ function DashboardHeader() {
             <span className="sr-only">Toggle Menu</span>
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="p-0">
-          <SheetHeader className="sr-only">
+        <SheetContent side="left" className="sm:max-w-xs">
+           <SheetHeader className="sr-only">
             <SheetTitle>Sidebar Menu</SheetTitle>
           </SheetHeader>
            <Sidebar />
@@ -56,7 +56,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
       <RoomProvider>
         <div className="flex min-h-screen w-full bg-muted/40">
-          <div className="hidden sm:flex">
+          <div className="hidden w-64 flex-col sm:flex">
             <Sidebar />
           </div>
           <div className="flex flex-1 flex-col">

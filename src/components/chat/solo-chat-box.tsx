@@ -32,6 +32,7 @@ export function SoloChatBox({ friend, onClose, defaultPosition }: SoloChatBoxPro
     const messages = soloChatMessages[friend.email] || [];
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const nodeRef = useRef(null);
 
     useEffect(() => {
         if (scrollAreaRef.current) {
@@ -79,8 +80,8 @@ export function SoloChatBox({ friend, onClose, defaultPosition }: SoloChatBoxPro
     }
 
     return (
-        <Draggable handle=".handle" defaultPosition={defaultPosition}>
-            <Card className="w-80 h-[28rem] flex flex-col shadow-2xl rounded-lg cursor-default fixed">
+        <Draggable handle=".handle" defaultPosition={defaultPosition} nodeRef={nodeRef}>
+            <Card ref={nodeRef} className="w-80 h-[28rem] flex flex-col shadow-2xl rounded-lg cursor-default fixed">
                 <CardHeader className="flex flex-row items-center justify-between p-3 border-b bg-muted/50 rounded-t-lg handle cursor-move">
                     <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8">

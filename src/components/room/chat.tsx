@@ -1,8 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
-import type { FormEvent } from "react";
+import { useState, FormEvent, useEffect, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,22 +9,26 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageSquare, Send, Smile } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useRooms } from "@/context/RoomContext";
-
-interface Message {
-    user: string;
-    text: string;
-    avatar: string;
-    hint: string;
-}
-
-const initialMessages: Message[] = [];
+import { useRooms, type ChatMessage } from "@/context/RoomContext";
+import { useAuth } from "@/context/AuthContext";
 
 export function Chat() {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [inputValue, setInputValue] = useState("");
   const params = useParams<{ roomId: string }>();
-  const { getRoomById, addSharedItem } = useRooms();
+  const roomId = params.roomId;
+  const { getRoomById, addSharedItem, messages, addMessage, userProfile } = useRooms();
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  
+  const roomMessages = messages[roomId] || [];
+
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+        const scrollViewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
+        if (scrollViewport) {
+            scrollViewport.scrollTop = scrollViewport.scrollHeight;
+        }
+    }
+  }, [roomMessages]);
 
   const handleSendMessage = async (e: FormEvent) => {
     e.preventDefault();
@@ -33,19 +36,18 @@ export function Chat() {
 
     const userMessageText = inputValue;
 
-    const newMessage: Message = {
-      user: "You",
+    const newMessage: ChatMessage = {
+      user: userProfile.name,
       text: userMessageText,
-      avatar: "https://placehold.co/40x40.png",
+      avatar: "https://placehold.co/40x40.png", // This should probably come from user profile
       hint: "user avatar",
     };
 
-    const updatedMessages = [...messages, newMessage];
-    setMessages(updatedMessages);
+    addMessage(roomId, newMessage);
     setInputValue("");
     
     // Log the chat to data management
-    const room = getRoomById(params.roomId);
+    const room = getRoomById(roomId);
     if (room) {
         addSharedItem({
             type: 'Chat',
@@ -65,16 +67,20 @@ export function Chat() {
         <MessageSquare className="h-5 w-5 text-muted-foreground" />
       </CardHeader>
       <CardContent className="flex-1 flex flex-col gap-4 p-6 pt-2">
-        <ScrollArea className="flex-1 pr-4 -mr-4">
+        <ScrollArea className="flex-1 pr-4 -mr-4" ref={scrollAreaRef}>
           <div className="space-y-4">
-            {messages.map((msg, index) => (
-              <div key={index} className={`flex items-start gap-3 ${msg.user === 'You' ? 'flex-row-reverse' : ''}`}>
+            {roomMessages.length === 0 ? (
+                <div className="text-center text-sm text-muted-foreground py-8">
+                    No messages yet. Start the conversation!
+                </div>
+            ) : roomMessages.map((msg, index) => (
+              <div key={index} className={`flex items-start gap-3 ${msg.user === userProfile.name ? 'flex-row-reverse' : ''}`}>
                  <Avatar className="h-9 w-9">
                     <AvatarImage src={msg.avatar} data-ai-hint={msg.hint} />
                     <AvatarFallback>{msg.user.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <div className={`rounded-lg px-3 py-2 text-sm max-w-[80%] ${msg.user === 'You' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-                  {(msg.user !== 'You') && 
+                <div className={`rounded-lg px-3 py-2 text-sm max-w-[80%] ${msg.user === userProfile.name ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                  {(msg.user !== userProfile.name) && 
                     <p className={`font-semibold text-xs pb-1`}>
                       {msg.user}
                     </p>}

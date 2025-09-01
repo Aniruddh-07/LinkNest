@@ -120,7 +120,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (loading) return;
 
-    const isAuthRoute = pathname === '/login' || pathname === '/signup';
+    const isAuthRoute = pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password' || pathname === '/reset-password';
     const isProtectedRoute = pathname.startsWith('/dashboard');
 
     if (user && isAuthRoute) {
@@ -147,6 +147,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const userCredential = await createUserWithEmailAndPassword(authInstance, email, password);
       await updateFirebaseProfile(userCredential.user, { displayName: name });
       
+      // Only send verification for password-based accounts
       if (userCredential.user.providerData.some(p => p.providerId === 'password')) {
         await sendEmailVerification(userCredential.user);
       }

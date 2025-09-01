@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useRooms, type Participant } from "@/context/RoomContext";
-import { Users, MoreHorizontal, Mic, MicOff, Video, VideoOff, ShieldCheck, UserX, ShieldQuestion } from "lucide-react";
+import { Users, MoreHorizontal, Mic, MicOff, Video, VideoOff, ShieldCheck, UserX, MessageSquare } from "lucide-react";
 
 
 interface ParticipantListProps {
@@ -17,7 +17,7 @@ interface ParticipantListProps {
 }
 
 export function ParticipantList({ isHost = false, participants, onRemove, onToggleMute, onToggleCamera, onMakeHost }: ParticipantListProps) {
-  const { userProfile } = useRooms();
+  const { userProfile, openSoloChat } = useRooms();
   
   return (
     <Card className="h-full">
@@ -35,7 +35,12 @@ export function ParticipantList({ isHost = false, participants, onRemove, onTogg
               </Avatar>
               <p className="font-medium flex-1 truncate">{p.name} {p.email === userProfile.email && '(You)'}</p>
               
-              <div className="flex items-center gap-1 text-muted-foreground">
+              <div className="flex items-center gap-2 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+                {p.email !== userProfile.email && (
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openSoloChat(p.email)}>
+                    <MessageSquare className="h-4 w-4" />
+                  </Button>
+                )}
                 {p.isHost && <ShieldCheck className="h-4 w-4 text-primary" title="Host" />}
                 {p.isMuted && <MicOff className="h-4 w-4" title="Muted" />}
                 {p.isCameraOff && <VideoOff className="h-4 w-4" title="Camera Off" />}

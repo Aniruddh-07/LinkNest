@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRooms, type Friend } from "@/context/RoomContext";
+import { useRooms, type Friend, type FriendRequest } from "@/context/RoomContext";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,17 +12,66 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Users, UserPlus, X, MessageSquare, Phone, Users2 } from "lucide-react";
+import { Users, UserPlus, X, MessageSquare, Phone, Users2, CheckIcon, UserCheck } from "lucide-react";
+
+function FriendRequestCard({ requests, onAccept, onDecline }: { requests: FriendRequest[], onAccept: (email: string) => void, onDecline: (email: string) => void}) {
+    if (requests.length === 0) return null;
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <UserCheck className="h-6 w-6" />
+                    Friend Requests ({requests.length})
+                </CardTitle>
+                <CardDescription>Accept or decline requests to connect.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {requests.map(req => (
+                    <div key={req.email} className="flex items-center gap-4">
+                        <Avatar className="h-10 w-10">
+                            <AvatarImage src={req.avatar} data-ai-hint={req.hint} />
+                            <AvatarFallback>{req.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                         <div className="flex-1">
+                            <p className="font-medium">{req.name}</p>
+                            <p className="text-xs text-muted-foreground">{req.email}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button size="icon" className="h-8 w-8" onClick={() => onAccept(req.email)}>
+                                <CheckIcon className="h-4 w-4" />
+                                <span className="sr-only">Accept</span>
+                            </Button>
+                            <Button size="icon" variant="destructive" className="h-8 w-8" onClick={() => onDecline(req.email)}>
+                                <X className="h-4 w-4" />
+                                <span className="sr-only">Decline</span>
+                            </Button>
+                        </div>
+                    </div>
+                ))}
+            </CardContent>
+        </Card>
+    );
+}
 
 export default function FriendsPage() {
-    const { friends, addFriend, removeFriend, addRoom, openSoloChat } = useRooms();
+    const { 
+        friends, 
+        sendFriendRequest, 
+        removeFriend, 
+        addRoom, 
+        openSoloChat,
+        friendRequests,
+        acceptFriendRequest,
+        declineFriendRequest 
+    } = useRooms();
     const { toast } = useToast();
     const router = useRouter();
 
     const [friendEmail, setFriendEmail] = useState("");
     const [selectedFriends, setSelectedFriends] = useState<Friend[]>([]);
 
-    const handleAddFriend = (e: React.FormEvent) => {
+    const handleSendRequest = (e: React.FormEvent) => {
         e.preventDefault();
         if (!friendEmail.trim() || !friendEmail.includes('@') || friends.some(f => f.email === friendEmail)) {
             toast({
@@ -32,17 +81,15 @@ export default function FriendsPage() {
             });
             return;
         }
-        const newFriend: Friend = {
+        sendFriendRequest({
             name: friendEmail.split('@')[0], // Mock name
             email: friendEmail,
             avatar: "https://placehold.co/40x40.png",
-            hint: "person avatar"
-        }
-        addFriend(newFriend);
+        });
         setFriendEmail("");
         toast({
-            title: "Friend Added",
-            description: `${newFriend.name} has been added to your friends list.`
+            title: "Friend Request Sent",
+            description: `Your request to connect with ${friendEmail.split('@')[0]} has been sent.`
         });
     }
 
@@ -88,7 +135,16 @@ export default function FriendsPage() {
     const handleStartCall = (friend: Friend) => {
         toast({ title: `Starting call with ${friend.name}...` });
         // In a real app, this would initiate a WebRTC call.
-        // For now, we'll just show a toast.
+    }
+
+    const handleAccept = (email: string) => {
+        acceptFriendRequest(email);
+        toast({ title: "Friend Request Accepted!" });
+    }
+
+    const handleDecline = (email: string) => {
+        declineFriendRequest(email);
+        toast({ title: "Friend Request Declined" });
     }
 
     return (
@@ -103,8 +159,8 @@ export default function FriendsPage() {
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="md:col-span-2">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+                <div className="md:col-span-2 space-y-8">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between">
                             <div>
@@ -158,6 +214,7 @@ export default function FriendsPage() {
                             </div>
                         </CardContent>
                     </Card>
+                    <FriendRequestCard requests={friendRequests} onAccept={handleAccept} onDecline={handleDecline} />
                 </div>
                 <div className="md:col-span-1">
                     <Card>
@@ -165,7 +222,7 @@ export default function FriendsPage() {
                             <CardTitle>Add a Friend</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <form onSubmit={handleAddFriend} className="space-y-4">
+                            <form onSubmit={handleSendRequest} className="space-y-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="friend-email">Friend's Email</Label>
                                     <Input 
@@ -179,7 +236,7 @@ export default function FriendsPage() {
                                 </div>
                                 <Button type="submit" className="w-full">
                                     <UserPlus className="mr-2 h-4 w-4"/>
-                                    Add Friend
+                                    Send Request
                                 </Button>
                             </form>
                         </CardContent>

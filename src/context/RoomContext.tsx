@@ -67,6 +67,14 @@ export interface ChatMessage {
   hint: string;
 }
 
+// Renamed from Friend for clarity
+export interface FriendRequest {
+  name: string;
+  email: string;
+  avatar: string;
+  hint: string;
+}
+
 
 interface RoomContextType {
   rooms: Room[]; // Rooms the user has joined
@@ -90,7 +98,7 @@ interface RoomContextType {
   deleteSharedItem: (itemId: string) => void;
   deleteAllSharedData: () => void;
   friends: Friend[];
-  addFriend: (friend: Friend) => void;
+  sendFriendRequest: (friendData: Omit<Friend, 'hint'> & { hint?: string }) => void; // Now sends a request
   removeFriend: (email: string) => void;
   participants: Record<string, Participant[]>;
   pendingUsers: Record<string, PendingUser[]>;
@@ -108,6 +116,10 @@ interface RoomContextType {
   openSoloChat: (friendEmail: string) => void;
   closeSoloChat: (friendEmail: string) => void;
   addSoloMessage: (friendEmail: string, message: ChatMessage) => void;
+  // Friend Requests
+  friendRequests: FriendRequest[];
+  acceptFriendRequest: (email: string) => void;
+  declineFriendRequest: (email: string) => void;
 }
 
 const RoomContext = createContext<RoomContextType | undefined>(undefined);
@@ -145,6 +157,11 @@ const initialFriends: Friend[] = [
   { name: "Alice", email: "alice@example.com", avatar: "https://placehold.co/40x40.png", hint: "woman smiling" },
   { name: "Bob", email: "bob@example.com", avatar: "https://placehold.co/40x40.png", hint: "man portrait" },
 ];
+
+const initialFriendRequests: FriendRequest[] = [
+  { name: "Charlie", email: "charlie@example.com", avatar: "https://placehold.co/40x40.png", hint: "person glasses" },
+  { name: "Frank", email: "frank@example.com", avatar: "https://placehold.co/40x40.png", hint: "man smiling portrait" }
+]
 
 const getInitialParticipants = (user: UserProfile | null): Record<string, Participant[]> => {
     if (!user) return {};
@@ -201,6 +218,10 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
           { user: "Test User", text: "Going great, thanks! Just working on the new feature.", avatar: "https://placehold.co/40x40.png", hint: "user avatar" },
       ]
   });
+
+  // --- Friend Request State ---
+  const [friendRequests, setFriendRequests] = useState<FriendRequest[]>(initialFriendRequests);
+
 
   useEffect(() => {
     if (user) {
@@ -341,13 +362,28 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
     setSharedData([]);
   }, []);
 
-  const addFriend = useCallback((friend: Friend) => {
-    setFriends(prev => [...prev, friend]);
+  const sendFriendRequest = useCallback((friendData: Omit<Friend, 'hint'> & { hint?: string }) => {
+    // In a real app, this would send a request to a backend.
+    // For this mock, we'll just log it. The request will appear in the recipient's list.
+    console.log("Friend request sent to:", friendData.email);
   }, []);
 
   const removeFriend = useCallback((email: string) => {
     setFriends(prev => prev.filter(f => f.email !== email));
   }, []);
+
+  const acceptFriendRequest = useCallback((email: string) => {
+    const request = friendRequests.find(req => req.email === email);
+    if (request) {
+      setFriends(prev => [...prev, request]);
+      setFriendRequests(prev => prev.filter(req => req.email !== email));
+    }
+  }, [friendRequests]);
+
+  const declineFriendRequest = useCallback((email: string) => {
+    setFriendRequests(prev => prev.filter(req => req.email !== email));
+  }, []);
+
 
   const approveUser = useCallback((roomId: string, userEmail: string) => {
     setPendingUsers(prevPending => {
@@ -457,7 +493,7 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
         deleteSharedItem,
         deleteAllSharedData,
         friends,
-        addFriend,
+        sendFriendRequest,
         removeFriend,
         participants,
         pendingUsers,
@@ -473,7 +509,10 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
         soloChatMessages,
         openSoloChat,
         closeSoloChat,
-        addSoloMessage
+        addSoloMessage,
+        friendRequests,
+        acceptFriendRequest,
+        declineFriendRequest,
     }}>
       {children}
     </RoomContext.Provider>

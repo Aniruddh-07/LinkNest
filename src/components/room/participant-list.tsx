@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useRooms, type Participant } from "@/context/RoomContext";
-import { Users, MoreHorizontal, Mic, MicOff, Video, VideoOff, ShieldCheck, UserX, MessageSquare } from "lucide-react";
+import { Users, MoreHorizontal, Mic, MicOff, Video, VideoOff, ShieldCheck, UserX, MessageSquare, UserPlus } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 
 interface ParticipantListProps {
@@ -17,7 +18,27 @@ interface ParticipantListProps {
 }
 
 export function ParticipantList({ isHost = false, participants, onRemove, onToggleMute, onToggleCamera, onMakeHost }: ParticipantListProps) {
-  const { userProfile, openSoloChat } = useRooms();
+  const { userProfile, friends, openSoloChat, sendFriendRequest } = useRooms();
+  const { toast } = useToast();
+
+  const handlePrivateMessageClick = (participant: Participant) => {
+    const isFriend = friends.some(f => f.email === participant.email);
+
+    if (isFriend) {
+        openSoloChat(participant.email);
+    } else {
+        sendFriendRequest({
+            name: participant.name,
+            email: participant.email,
+            avatar: participant.avatar,
+            hint: participant.hint,
+        });
+        toast({
+            title: "Friend Request Sent",
+            description: `Your request to connect with ${participant.name} has been sent.`
+        });
+    }
+  }
   
   return (
     <Card className="h-full">
@@ -27,54 +48,58 @@ export function ParticipantList({ isHost = false, participants, onRemove, onTogg
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {participants.map((p) => (
-            <div key={p.email} className="flex items-center gap-4 group">
-              <Avatar>
-                <AvatarImage src={p.avatar} data-ai-hint={p.hint} />
-                <AvatarFallback>{p.name.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <p className="font-medium flex-1 truncate">{p.name} {p.email === userProfile.email && '(You)'}</p>
-              
-              <div className="flex items-center gap-2 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                {p.email !== userProfile.email && (
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openSoloChat(p.email)}>
-                    <MessageSquare className="h-4 w-4" />
-                  </Button>
-                )}
-                {p.isHost && <ShieldCheck className="h-4 w-4 text-primary" title="Host" />}
-                {p.isMuted && <MicOff className="h-4 w-4" title="Muted" />}
-                {p.isCameraOff && <VideoOff className="h-4 w-4" title="Camera Off" />}
-              </div>
+          {participants.map((p) => {
+            const isFriend = friends.some(f => f.email === p.email);
+            return (
+              <div key={p.email} className="flex items-center gap-4 group">
+                <Avatar>
+                  <AvatarImage src={p.avatar} data-ai-hint={p.hint} />
+                  <AvatarFallback>{p.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <p className="font-medium flex-1 truncate">{p.name} {p.email === userProfile.email && '(You)'}</p>
+                
+                <div className="flex items-center gap-2 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+                  {p.email !== userProfile.email && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handlePrivateMessageClick(p)}>
+                      {isFriend ? <MessageSquare className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+                      <span className="sr-only">{isFriend ? "Send Message" : "Add Friend"}</span>
+                    </Button>
+                  )}
+                  {p.isHost && <ShieldCheck className="h-4 w-4 text-primary" title="Host" />}
+                  {p.isMuted && <MicOff className="h-4 w-4" title="Muted" />}
+                  {p.isCameraOff && <VideoOff className="h-4 w-4" title="Camera Off" />}
+                </div>
 
-              {isHost && p.email !== userProfile.email && (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 ml-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => onToggleMute(p.email)}>
-                        {p.isMuted ? <Mic className="mr-2 h-4 w-4" /> : <MicOff className="mr-2 h-4 w-4" />} 
-                        {p.isMuted ? 'Unmute' : 'Mute'} Mic
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onToggleCamera(p.email)}>
-                        {p.isCameraOff ? <Video className="mr-2 h-4 w-4" /> : <VideoOff className="mr-2 h-4 w-4" />}
-                        {p.isCameraOff ? 'Start' : 'Stop'} Camera
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onMakeHost(p.email)}>
-                        <ShieldCheck className="mr-2 h-4 w-4" />
-                        {p.isHost ? 'Revoke Host' : 'Make Host'}
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onRemove(p.email)}>
-                          <UserX className="mr-2 h-4 w-4" /> Remove
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </div>
-          ))}
+                {isHost && p.email !== userProfile.email && (
+                  <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 ml-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => onToggleMute(p.email)}>
+                          {p.isMuted ? <Mic className="mr-2 h-4 w-4" /> : <MicOff className="mr-2 h-4 w-4" />} 
+                          {p.isMuted ? 'Unmute' : 'Mute'} Mic
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onToggleCamera(p.email)}>
+                          {p.isCameraOff ? <Video className="mr-2 h-4 w-4" /> : <VideoOff className="mr-2 h-4 w-4" />}
+                          {p.isCameraOff ? 'Start' : 'Stop'} Camera
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onMakeHost(p.email)}>
+                          <ShieldCheck className="mr-2 h-4 w-4" />
+                          {p.isHost ? 'Revoke Host' : 'Make Host'}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onRemove(p.email)}>
+                            <UserX className="mr-2 h-4 w-4" /> Remove
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
+            )
+          })}
         </div>
       </CardContent>
     </Card>

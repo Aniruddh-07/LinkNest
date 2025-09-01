@@ -14,8 +14,11 @@ function LandingNavbar() {
         <span className="text-xl font-bold">LinkNest</span>
       </Link>
       <div className="flex items-center gap-2">
+        <Button asChild variant="outline">
+            <Link href="/login">Login</Link>
+        </Button>
         <Button asChild>
-          <Link href="/dashboard">View Dashboard</Link>
+            <Link href="/signup">Sign Up</Link>
         </Button>
       </div>
     </nav>
@@ -76,7 +79,7 @@ export default function LandingPage() {
           </p>
           <div className="mt-8 flex gap-4">
             <Button asChild size="lg">
-              <Link href="/dashboard">Get Started for Free</Link>
+              <Link href="/signup">Get Started for Free</Link>
             </Button>
           </div>
         </section>
@@ -153,7 +156,7 @@ export default function LandingPage() {
             </p>
             <div className="mt-8">
               <Button asChild size="lg">
-                <Link href="/dashboard">Sign Up Now</Link>
+                <Link href="/signup">Sign Up Now</Link>
               </Button>
             </div>
           </div>

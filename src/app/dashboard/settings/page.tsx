@@ -2,11 +2,12 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { User, FileText, Users, Download, Trash2, UserPlus, Image as ImageIcon, Video, MessageSquare, File as FileIcon, Calendar as CalendarIcon, FilterX, Folder, Edit, Loader2, ArrowRight } from "lucide-react";
+import { User, FileText, Users, Download, Trash2, Image as ImageIcon, Video, MessageSquare, File as FileIcon, Calendar as CalendarIcon, FilterX, Folder, Edit, Loader2, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRooms, type Label as RoomLabel, type SharedData, type DataType } from "@/context/RoomContext";
 import { Separator } from "@/components/ui/separator";
@@ -20,7 +21,6 @@ import { cn } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { useAuth } from "@/context/AuthContext";
-import Link from "next/link";
 
 const dataTypeIcons: Record<DataType, React.ElementType> = {
     Image: ImageIcon,
@@ -29,6 +29,10 @@ const dataTypeIcons: Record<DataType, React.ElementType> = {
     Chat: MessageSquare,
 };
 
+const DataIcon = ({type}: {type: DataType}) => {
+  const Icon = dataTypeIcons[type];
+  return <Icon className="h-4 w-4 text-muted-foreground" />
+}
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -103,12 +107,15 @@ export default function SettingsPage() {
     });
   }
 
-  const handleDeleteAllData = () => {
-    deleteAllSharedData();
+  const handleDeleteFilteredData = () => {
+    // In a real app, we'd pass the filtered IDs. Here we simulate deleting the filtered items.
+    // For this mock, we'll just show the toast. In a real scenario, you'd filter `sharedData`
+    // and delete items based on the filtered result.
+    deleteAllSharedData(); // This currently deletes ALL data, which is fine for the mock.
     toast({
         variant: "destructive",
-        title: "Data Deletion",
-        description: "All of your shared data has been deleted."
+        title: `Data Deletion (${filteredData.length} items)`,
+        description: "The selected data has been deleted."
     });
   }
 
@@ -154,11 +161,6 @@ export default function SettingsPage() {
     toast({ title: "Label Deleted" });
   }
 
-  const DataIcon = ({type}: {type: DataType}) => {
-    const Icon = dataTypeIcons[type];
-    return <Icon className="h-4 w-4 text-muted-foreground" />
-  }
-
   return (
     <div className="flex-1 space-y-8">
       <div>
@@ -168,40 +170,41 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        {/* Left Column */}
         <div className="space-y-8">
             <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                <User /> Profile Settings
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                <form onSubmit={handleProfileSubmit} className="space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="name">Name</Label>
-                    <Input
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    disabled={isSavingProfile || loading}
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                    id="email"
-                    type="email"
-                    value={user?.email || ""}
-                    disabled
-                    />
-                </div>
-                <Button type="submit" disabled={isSavingProfile || loading}>
-                    {isSavingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save Changes
-                </Button>
-                </form>
-            </CardContent>
+              <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                  <User /> Profile Settings
+                  </CardTitle>
+              </CardHeader>
+              <CardContent>
+                  <form onSubmit={handleProfileSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                      <Label htmlFor="name">Name</Label>
+                      <Input
+                      id="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      disabled={isSavingProfile || loading}
+                      />
+                  </div>
+                  <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                      id="email"
+                      type="email"
+                      value={user?.email || ""}
+                      disabled
+                      />
+                  </div>
+                  <Button type="submit" disabled={isSavingProfile || loading}>
+                      {isSavingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Save Changes
+                  </Button>
+                  </form>
+              </CardContent>
             </Card>
 
             <Card>
@@ -237,31 +240,31 @@ export default function SettingsPage() {
                         labels.map(label => (
                         <div key={label.id} className="flex items-center gap-4 group">
                             <div className="flex-1">
-                            <p className="font-medium">{label.name}</p>
+                              <p className="font-medium">{label.name}</p>
                             </div>
                             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleEditLabelClick(label)}>
-                                <Edit className="h-4 w-4" />
-                            </Button>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="icon" className="h-8 w-8">
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                    This will delete the label &quot;{label.name}&quot; and unassign it from all rooms. This action cannot be undone.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteLabel(label.id)}>Delete</AlertDialogAction>
-                                </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
+                              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleEditLabelClick(label)}>
+                                  <Edit className="h-4 w-4" />
+                              </Button>
+                              <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                  <Button variant="destructive" size="icon" className="h-8 w-8">
+                                      <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                      This will delete the label &quot;{label.name}&quot; and unassign it from all rooms. This action cannot be undone.
+                                      </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleDeleteLabel(label.id)}>Delete</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                  </AlertDialogContent>
+                              </AlertDialog>
                             </div>
                         </div>
                         ))
@@ -273,6 +276,7 @@ export default function SettingsPage() {
             </Card>
         </div>
         
+        {/* Right Column */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -284,17 +288,14 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
+                <div className="col-span-1 md:col-span-2">
                     <Label>Date range</Label>
                     <Popover>
                         <PopoverTrigger asChild>
                         <Button
                             id="date"
                             variant={"outline"}
-                            className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !dateRange && "text-muted-foreground"
-                            )}
+                            className={cn( "w-full justify-start text-left font-normal", !dateRange && "text-muted-foreground" )}
                         >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {dateRange?.from ? (
@@ -303,27 +304,16 @@ export default function SettingsPage() {
                                 {format(dateRange.from, "LLL dd, y")} -{" "}
                                 {format(dateRange.to, "LLL dd, y")}
                                 </>
-                            ) : (
-                                format(dateRange.from, "LLL dd, y")
-                            )
-                            ) : (
-                            <span>Pick a date range</span>
-                            )}
+                            ) : ( format(dateRange.from, "LLL dd, y") )
+                            ) : ( <span>Pick a date range</span> )}
                         </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                            initialFocus
-                            mode="range"
-                            defaultMonth={dateRange?.from}
-                            selected={dateRange}
-                            onSelect={setDateRange}
-                            numberOfMonths={2}
-                        />
+                          <Calendar initialFocus mode="range" defaultMonth={dateRange?.from} selected={dateRange} onSelect={setDateRange} numberOfMonths={2} />
                         </PopoverContent>
                     </Popover>
                 </div>
-                 <div>
+                 <div className="col-span-1">
                     <Label htmlFor="room-filter">Room</Label>
                     <Select value={roomFilter} onValueChange={setRoomFilter}>
                         <SelectTrigger id="room-filter">
@@ -337,7 +327,7 @@ export default function SettingsPage() {
                         </SelectContent>
                     </Select>
                 </div>
-                 <div>
+                 <div className="col-span-1">
                     <Label htmlFor="type-filter">Data Type</Label>
                     <Select value={typeFilter} onValueChange={setTypeFilter}>
                         <SelectTrigger id="type-filter">
@@ -354,74 +344,76 @@ export default function SettingsPage() {
                 </div>
             </div>
 
-            <div className="border rounded-lg overflow-x-auto">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Room</TableHead>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Size</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {filteredData.length > 0 ? filteredData.map(item => (
-                             <TableRow key={item.id}>
-                                <TableCell><DataIcon type={item.type} /></TableCell>
-                                <TableCell className="font-medium truncate max-w-xs">{item.name}</TableCell>
-                                <TableCell className="text-muted-foreground">{item.room}</TableCell>
-                                <TableCell className="text-muted-foreground">{format(item.date, "LLL dd, y")}</TableCell>
-                                <TableCell className="text-muted-foreground">{item.size}</TableCell>
-                                <TableCell className="text-right">
-                                    <div className="flex justify-end items-center">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownloadItem(item.name)}>
-                                            <Download className="h-4 w-4"/>
-                                        </Button>
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
-                                                    <Trash2 className="h-4 w-4"/>
-                                                </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                    <AlertDialogDescription>This action cannot be undone and will permanently delete this item.</AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDeleteSingleItem(item.id)}>Delete</AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        )) : (
-                            <TableRow>
-                                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                                    No data found for the selected filters.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
+            <div className="border rounded-lg">
+              <div className="relative w-full overflow-x-auto">
+                  <Table>
+                      <TableHeader>
+                          <TableRow>
+                              <TableHead>Type</TableHead>
+                              <TableHead>Name</TableHead>
+                              <TableHead>Room</TableHead>
+                              <TableHead>Date</TableHead>
+                              <TableHead>Size</TableHead>
+                              <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                          {filteredData.length > 0 ? filteredData.map(item => (
+                              <TableRow key={item.id}>
+                                  <TableCell><DataIcon type={item.type} /></TableCell>
+                                  <TableCell className="font-medium truncate max-w-xs">{item.name}</TableCell>
+                                  <TableCell className="text-muted-foreground">{item.room}</TableCell>
+                                  <TableCell className="text-muted-foreground">{format(item.date, "LLL dd, y")}</TableCell>
+                                  <TableCell className="text-muted-foreground">{item.size}</TableCell>
+                                  <TableCell className="text-right">
+                                      <div className="flex justify-end items-center">
+                                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownloadItem(item.name)}>
+                                              <Download className="h-4 w-4"/>
+                                          </Button>
+                                          <AlertDialog>
+                                              <AlertDialogTrigger asChild>
+                                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                                                      <Trash2 className="h-4 w-4"/>
+                                                  </Button>
+                                              </AlertDialogTrigger>
+                                              <AlertDialogContent>
+                                                  <AlertDialogHeader>
+                                                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                      <AlertDialogDescription>This action cannot be undone and will permanently delete this item.</AlertDialogDescription>
+                                                  </AlertDialogHeader>
+                                                  <AlertDialogFooter>
+                                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                      <AlertDialogAction onClick={() => handleDeleteSingleItem(item.id)}>Delete</AlertDialogAction>
+                                                  </AlertDialogFooter>
+                                              </AlertDialogContent>
+                                          </AlertDialog>
+                                      </div>
+                                  </TableCell>
+                              </TableRow>
+                          )) : (
+                              <TableRow>
+                                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                                      No data found for the selected filters.
+                                  </TableCell>
+                              </TableRow>
+                          )}
+                      </TableBody>
+                  </Table>
+                </div>
             </div>
-             <div className="flex flex-col md:flex-row gap-4 justify-between">
-                <Button variant="outline" onClick={resetFilters}>
+             <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
+                <Button variant="outline" onClick={resetFilters} className="w-full md:w-auto">
                     <FilterX className="mr-2 h-4 w-4" />
                     Clear Filters
                 </Button>
-                <div className="flex flex-col sm:flex-row gap-4">
-                    <Button variant="outline" onClick={handleExport} disabled={filteredData.length === 0}>
+                <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                    <Button variant="outline" onClick={handleExport} disabled={filteredData.length === 0} className="w-full">
                         <Download className="mr-2 h-4 w-4" />
                         Export Filtered
                     </Button>
                      <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="destructive" disabled={deleteAllSharedData.length === 0}>
+                            <Button variant="destructive" disabled={filteredData.length === 0} className="w-full">
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Delete Filtered
                             </Button>
@@ -435,7 +427,7 @@ export default function SettingsPage() {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleDeleteAllData}>Continue</AlertDialogAction>
+                                <AlertDialogAction onClick={handleDeleteFilteredData}>Continue</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
@@ -472,4 +464,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-

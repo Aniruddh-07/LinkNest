@@ -2,61 +2,15 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { 
-  getAuth, 
-  onAuthStateChanged, 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signOut, 
-  sendEmailVerification,
-  sendPasswordResetEmail,
-  verifyPasswordResetCode as verifyFirebaseCode,
-  confirmPasswordReset as confirmFirebaseReset,
-  updateProfile as updateFirebaseProfile,
-  signInWithPopup,
-  GoogleAuthProvider,
-  GithubAuthProvider,
-  type User,
-  type Auth
-} from 'firebase/auth';
+import type { User } from 'firebase/auth';
 import { usePathname, useRouter } from 'next/navigation';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AnimatedLogoLoader } from '@/components/loaders';
-import { Skeleton } from '@/components/ui/skeleton';
-
-// --- Firebase Initialization ---
-import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
-
-let app: FirebaseApp | null = null;
-
-const checkFirebaseConfiguration = (): boolean => {
-    return true; // Mocked for now
-};
-
-const getFirebaseApp = (): FirebaseApp | null => {
-    if (app) return app;
-
-    // Mock config to prevent errors
-    const firebaseConfig = {
-        apiKey: "test",
-        authDomain: "test.firebaseapp.com",
-        projectId: "test",
-    };
-    
-    if (getApps().length > 0) {
-        app = getApp();
-    } else {
-        app = initializeApp(firebaseConfig);
-    }
-    return app;
-}
-
 
 // --- Auth Context ---
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  isFirebaseConfigured: boolean;
+  isFirebaseConfigured: boolean; // Kept for potential future use
   signup: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
@@ -71,15 +25,15 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AuthLoader = () => {
-  return <AnimatedLogoLoader />;
+  return <AnimatedLogoLoader message="Loading..." />;
 };
 
+// This is our hardcoded mock user for testing purposes
 const mockUser = {
   uid: 'test-user-123',
   email: 'test@example.com',
   displayName: 'Test User',
   emailVerified: true,
-  // Add other properties as needed by your app, matching the Firebase User type
   photoURL: null,
   providerId: 'password',
   metadata: {},
@@ -97,25 +51,31 @@ const mockUser = {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isFirebaseConfigured, setIsFirebaseConfigured] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
 
+  // On initial load, simulate checking for an existing session and set the mock user
   useEffect(() => {
-    // Mocking the auth state
-    setUser(mockUser);
-    setLoading(false);
+    // In a real app, you'd check localStorage or an API. Here, we just set the mock user.
+    setTimeout(() => {
+      setUser(mockUser);
+      setLoading(false);
+    }, 500); // A small delay to simulate network latency
   }, []);
 
+  // This effect handles routing logic AFTER the initial loading is complete
   useEffect(() => {
-    if (loading) return;
+    if (loading) return; // Don't do anything while loading
 
-    const isAuthRoute = pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password' || pathname === '/reset-password';
+    const isAuthRoute = ['/login', '/signup', '/forgot-password', '/reset-password'].includes(pathname);
     const isProtectedRoute = pathname.startsWith('/dashboard');
 
+    // If user is logged in and tries to access an auth page, redirect to dashboard
     if (user && isAuthRoute) {
         router.push('/dashboard');
     }
+    
+    // If user is not logged in and tries to access a protected page, redirect to login
     if (!user && isProtectedRoute) {
         router.push('/login');
     }
@@ -123,48 +83,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [user, loading, pathname, router]);
   
   
-  // Mocked functions
-  const signup = async (email: string, password: string, name: string) => {
-    console.log("Signup called (mocked)", { email, name });
-    setUser(mockUser);
-    return { success: true };
-  };
-
+  // --- Mocked Auth Functions ---
   const login = async (email: string, password: string) => {
-    console.log("Login called (mocked)", { email });
-    setUser(mockUser);
-    return { success: true };
+    setLoading(true);
+    // In the mock, we just pretend the login is successful
+    return new Promise<{ success: boolean; }>(resolve => {
+        setTimeout(() => {
+            setUser(mockUser);
+            setLoading(false);
+            resolve({ success: true });
+        }, 500)
+    });
   };
 
+  const signup = async (email: string, password: string, name: string) => {
+      // For mock purposes, signup also just logs the user in.
+      return login(email, password);
+  };
+  
   const socialSignIn = async (provider: 'google' | 'github') => {
-    console.log(`Social sign-in with ${provider} (mocked)`);
-    setUser(mockUser);
-    return { success: true };
+      return login("social@example.com", "password");
   }
 
-  const signInWithGoogle = async () => socialSignIn('google');
-  const signInWithGitHub = async () => socialSignIn('github');
+  const signInWithGoogle = () => socialSignIn('google');
+  const signInWithGitHub = () => socialSignIn('github');
   
-  const sendPasswordReset = async (email: string) => {
-    console.log("Password reset sent (mocked)", { email });
-    return { success: true };
-  }
-
-  const verifyPasswordResetCode = async (code: string) => {
-      return { success: true };
-  };
-  
-  const confirmPasswordReset = async (code: string, newPassword: string) => {
-      return { success: true };
-  };
+  const sendPasswordReset = async (email: string) => ({ success: true });
+  const verifyPasswordResetCode = async (code: string) => ({ success: true });
+  const confirmPasswordReset = async (code: string, newPassword: string) => ({ success: true });
 
   const logout = async () => {
-    console.log("Logout called (mocked)");
-    setUser(null);
+    setLoading(true);
+    setTimeout(() => {
+        setUser(null);
+        setLoading(false);
+    }, 500);
   };
   
   const updateProfile = async (profileData: { displayName?: string; photoURL?: string }) => {
-    console.log("Profile updated (mocked)", profileData);
     if(user) {
       setUser({ ...user, ...profileData });
     }
@@ -173,7 +129,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value = {
     user,
     loading,
-    isFirebaseConfigured,
+    isFirebaseConfigured: true, // Mocked as true
     signup,
     login,
     logout,
@@ -184,7 +140,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     verifyPasswordResetCode,
     confirmPasswordReset,
   };
-
+  
+  // While loading, show a full-screen loader to prevent content flash
   if (loading) {
     return <AuthLoader />;
   }
@@ -200,20 +157,6 @@ export const useAuth = () => {
   return context;
 };
 
-
-export const FirebaseWarning = () => (
-    <Alert variant="destructive" className="mb-4">
-        <AlertTitle>Firebase Not Configured</AlertTitle>
-        <AlertDescription>
-            Your Firebase environment variables are missing or incorrect. Please add your project credentials to the 
-            <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold mx-1">.env</code> 
-            file and ensure the application has been restarted.
-        </AlertDescription>
-    </Alert>
-);
-
-export const AuthFormSkeleton = () => {
-    return (
-       <AnimatedLogoLoader message="Authenticating..."/>
-    )
-};
+// These components are not used in the mock flow but kept for structure
+export const FirebaseWarning = () => null;
+export const AuthFormSkeleton = () => null;

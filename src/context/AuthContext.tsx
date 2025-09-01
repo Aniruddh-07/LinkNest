@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import type { User } from 'firebase/auth';
 import { usePathname, useRouter } from 'next/navigation';
-import { AnimatedLogoLoader } from '@/components/loaders';
+import { AnimatedLogoLoader, DashboardSkeleton } from '@/components/loaders';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -25,40 +25,6 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-const AuthLoader = () => {
-  return <AnimatedLogoLoader message="Authenticating..." />;
-};
-
-export const AuthFormSkeleton = () => {
-    return (
-        <Card className="mx-auto max-w-sm w-full">
-            <CardHeader className="space-y-2 text-center">
-                <div className="flex justify-center mb-2">
-                    <Skeleton className="h-8 w-8 rounded-full" />
-                </div>
-                <Skeleton className="h-6 w-3/5 mx-auto" />
-                <Skeleton className="h-4 w-4/5 mx-auto" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                </div>
-                <div className="space-y-2">
-                    <Skeleton className="h-4 w-16" />
-                    <Skeleton className="h-10 w-full" />
-                </div>
-                <div className="space-y-2">
-                    <Skeleton className="h-4 w-16" />
-                    <Skeleton className="h-10 w-full" />
-                </div>
-                 <Skeleton className="h-10 w-full" />
-            </CardContent>
-        </Card>
-    );
-};
-
 
 // This is our hardcoded mock user for testing purposes
 const mockUser: User = {
@@ -85,7 +51,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (session) {
       setUser(mockUser);
     }
-    setLoading(false);
+    // Artificial delay to simulate async auth check
+    setTimeout(() => setLoading(false), 500);
   }, []);
 
   // This effect handles routing logic AFTER the initial loading is complete
@@ -172,23 +139,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     confirmPasswordReset,
   };
   
-  const isAuthRoute = ['/login', '/signup', '/forgot-password', '/reset-password'].some(p => pathname.startsWith(p));
-
-  // While loading, show a full-screen loader or a form skeleton on auth pages
-  if (loading) {
-    return isAuthRoute ? <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4"><AuthFormSkeleton /></div> : <AuthLoader />;
-  }
-
-  // If we are on a protected route but have no user, render nothing (the effect will redirect)
-  if (!user && pathname.startsWith('/dashboard')) {
-      return null;
-  }
-  
-  // If we are on an auth route with a user, render nothing (the effect will redirect)
-  if (user && isAuthRoute) {
-      return null;
-  }
-
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
@@ -202,3 +152,33 @@ export const useAuth = () => {
 
 // This component is not used in the mock flow but kept for structure
 export const FirebaseWarning = () => null;
+
+
+export const AuthFormSkeleton = () => {
+    return (
+        <Card className="mx-auto max-w-sm w-full">
+            <CardHeader className="space-y-2 text-center">
+                <div className="flex justify-center mb-2">
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                </div>
+                <Skeleton className="h-6 w-3/5 mx-auto" />
+                <Skeleton className="h-4 w-4/5 mx-auto" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                 <Skeleton className="h-10 w-full" />
+            </CardContent>
+        </Card>
+    );
+};

@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquare, Send, Smile, Bot, Loader2 } from "lucide-react";
-import { chatAssistant } from "@/ai/flows/chat-assistant-flow";
+import { MessageSquare, Send, Smile } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useRooms } from "@/context/RoomContext";
 
@@ -20,22 +19,17 @@ interface Message {
     hint: string;
 }
 
-const initialMessages: Message[] = [
-  { user: "Alice", text: "Hey everyone! 👋", avatar: "https://placehold.co/40x40.png", hint: "woman smiling" },
-  { user: "Bob", text: "Hi Alice! What's up?", avatar: "https://placehold.co/40x40.png", hint: "man portrait" },
-  { user: "You", text: "Getting ready for the presentation. /a please summarize our goals.", avatar: "https://placehold.co/40x40.png", hint: "user avatar" },
-];
+const initialMessages: Message[] = [];
 
 export function Chat() {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [inputValue, setInputValue] = useState("");
-  const [isAssistantThinking, setIsAssistantThinking] = useState(false);
   const params = useParams<{ roomId: string }>();
   const { getRoomById, addSharedItem } = useRooms();
 
   const handleSendMessage = async (e: FormEvent) => {
     e.preventDefault();
-    if (!inputValue.trim() || isAssistantThinking) return;
+    if (!inputValue.trim()) return;
 
     const userMessageText = inputValue;
 
@@ -50,56 +44,17 @@ export function Chat() {
     setMessages(updatedMessages);
     setInputValue("");
     
-    // Check if the message triggers the text assistant
-    if (userMessageText.trim().toLowerCase().startsWith("/a ")) {
-        setIsAssistantThinking(true);
-        try {
-          // Create a version of the history for the AI, stripping the command from the last message
-          const aiHistory = updatedMessages.map((m, index) => {
-              if (index === updatedMessages.length - 1) {
-                  return { user: m.user, text: m.text.replace(/^\/a\s*/i, "") };
-              }
-              return { user: m.user, text: m.text };
-          });
-
-          const assistantInput = {
-            history: aiHistory,
-          };
-          const response = await chatAssistant(assistantInput);
-          
-          const assistantMessage: Message = {
-            user: "Assistant",
-            text: response.reply,
-            avatar: "https://placehold.co/40x40.png",
-            hint: "robot assistant",
-          };
-          setMessages(prev => [...prev, assistantMessage]);
-
-          // Log the chat to data management
-          const room = getRoomById(params.roomId);
-          if (room) {
-            addSharedItem({
-              type: 'Chat',
-              name: `AI: ${response.reply.substring(0, 30)}...`,
-              room: room.name,
-              roomId: room.id,
-              date: new Date(),
-              size: '<1KB',
-            });
-          }
-
-        } catch (error) {
-          console.error("AI Assistant error:", error);
-          const errorMessage: Message = {
-            user: "Assistant",
-            text: "Sorry, I'm having trouble connecting. Please try again later.",
-            avatar: "https://placehold.co/40x40.png",
-            hint: "robot error",
-          };
-          setMessages(prev => [...prev, errorMessage]);
-        } finally {
-          setIsAssistantThinking(false);
-        }
+    // Log the chat to data management
+    const room = getRoomById(params.roomId);
+    if (room) {
+        addSharedItem({
+            type: 'Chat',
+            name: `Chat: ${userMessageText.substring(0, 30)}...`,
+            room: room.name,
+            roomId: room.id,
+            date: new Date(),
+            size: '<1KB',
+        });
     }
   };
 
@@ -120,44 +75,27 @@ export function Chat() {
                 </Avatar>
                 <div className={`rounded-lg px-3 py-2 text-sm max-w-[80%] ${msg.user === 'You' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
                   {(msg.user !== 'You') && 
-                    <p className={`font-semibold text-xs pb-1 ${msg.user === 'Assistant' ? 'text-primary' : ''} flex items-center gap-1`}>
-                      {msg.user === 'Assistant' && <Bot className="h-3 w-3" />}
+                    <p className={`font-semibold text-xs pb-1`}>
                       {msg.user}
                     </p>}
                   <p>{msg.text}</p>
                 </div>
               </div>
             ))}
-            {isAssistantThinking && (
-              <div className="flex items-start gap-3">
-                <Avatar className="h-9 w-9">
-                  <AvatarImage src="https://placehold.co/40x40.png" data-ai-hint="robot assistant" />
-                  <AvatarFallback>A</AvatarFallback>
-                </Avatar>
-                <div className="rounded-lg px-3 py-2 text-sm max-w-[80%] bg-muted">
-                  <p className="font-semibold text-xs pb-1 text-primary flex items-center gap-1"><Bot className="h-3 w-3" /> Assistant</p>
-                  <p className="flex items-center gap-2 text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin"/>
-                    <span>Thinking...</span>
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
         </ScrollArea>
         <form onSubmit={handleSendMessage} className="relative">
           <Input 
-            placeholder="Type... (/a to chat)" 
+            placeholder="Type a message..." 
             className="pr-20"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            disabled={isAssistantThinking}
           />
           <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center">
             <Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled>
               <Smile className="h-4 w-4" />
             </Button>
-            <Button type="submit" variant="ghost" size="icon" className="h-8 w-8" disabled={isAssistantThinking}>
+            <Button type="submit" variant="ghost" size="icon" className="h-8 w-8">
               <Send className="h-4 w-4" />
             </Button>
           </div>

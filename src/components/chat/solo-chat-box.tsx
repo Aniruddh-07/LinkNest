@@ -81,7 +81,7 @@ export function SoloChatBox({ friend, onClose, defaultPosition }: SoloChatBoxPro
 
     return (
         <Draggable handle=".handle" defaultPosition={defaultPosition} nodeRef={nodeRef}>
-            <Card ref={nodeRef} className="w-80 h-[28rem] flex flex-col shadow-2xl rounded-lg cursor-default fixed z-50">
+            <Card ref={nodeRef} className="w-80 h-[28rem] flex flex-col shadow-2xl rounded-lg cursor-default fixed z-[999]">
                 <CardHeader className="flex flex-row items-center justify-between p-3 border-b bg-muted/50 rounded-t-lg handle cursor-move">
                     <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8">

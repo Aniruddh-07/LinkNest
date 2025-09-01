@@ -44,7 +44,7 @@ export function SoloChatManager() {
     return (
         <div className="fixed bottom-0 right-4 flex items-end gap-4">
              {openChats.map((partner, index) => (
-                 <div key={partner.email} style={{ right: `${index * 21}rem`}}>
+                <div key={partner.email} style={{ transform: `translateX(-${index * 21}rem)`}}>
                     <SoloChatBox 
                         friend={partner}
                         onClose={closeSoloChat}

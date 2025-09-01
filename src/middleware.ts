@@ -7,17 +7,19 @@ import type { NextRequest } from 'next/server'
 // It prevents the dashboard from even being rendered for an unauthenticated user.
 // The client-side logic will still handle the redirect.
 
+// In developer mode, we are disabling the middleware to allow direct access.
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get('firebaseIdToken');
-  const { pathname } = request.nextUrl;
+  // const token = request.cookies.get('firebaseIdToken');
+  // const { pathname } = request.nextUrl;
 
-  const isProtectedRoute = pathname.startsWith('/dashboard');
+  // const isProtectedRoute = pathname.startsWith('/dashboard');
 
-  if (isProtectedRoute && !token) {
-    // If trying to access a protected route without a token,
-    // rewrite to the login page. The client-side AuthProvider will handle the actual redirect.
-    return NextResponse.rewrite(new URL('/login', request.url));
-  }
+  // if (isProtectedRoute && !token) {
+  //   // If trying to access a protected route without a token,
+  //   // rewrite to the login page. The client-side AuthProvider will handle the actual redirect.
+  //   return NextResponse.rewrite(new URL('/login', request.url));
+  // }
 
   return NextResponse.next();
 }
+

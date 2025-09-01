@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { SoloChatManager } from "@/components/chat/solo-chat-manager";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -29,7 +30,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <RoomProvider>
         <div className="flex min-h-screen w-full bg-muted/40">
           <Sidebar />
-          <main className="flex flex-1 flex-col p-4 sm:p-6 overflow-hidden">{children}</main>
+          <main className="flex flex-1 flex-col p-4 sm:p-6 overflow-hidden">
+            {children}
+          </main>
+          <SoloChatManager />
         </div>
       </RoomProvider>
   );

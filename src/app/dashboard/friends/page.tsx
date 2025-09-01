@@ -15,7 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { Users, UserPlus, X, MessageSquare, Phone, Users2 } from "lucide-react";
 
 export default function FriendsPage() {
-    const { friends, addFriend, removeFriend, addRoom } = useRooms();
+    const { friends, addFriend, removeFriend, addRoom, openSoloChat } = useRooms();
     const { toast } = useToast();
     const router = useRouter();
 
@@ -82,9 +82,7 @@ export default function FriendsPage() {
     }
 
     const handleStartChat = (friend: Friend) => {
-        toast({ title: `Starting chat with ${friend.name}...` });
-        // In a real app, this would navigate to a 1-on-1 chat page.
-        // For now, we'll just show a toast.
+        openSoloChat(friend.email);
     }
     
     const handleStartCall = (friend: Friend) => {

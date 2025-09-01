@@ -102,6 +102,12 @@ interface RoomContextType {
   makeHost: (roomId: string, userEmail: string) => void;
   messages: Record<string, ChatMessage[]>;
   addMessage: (roomId: string, message: ChatMessage) => void;
+  // Solo Chat
+  activeSoloChats: string[]; // array of friend emails
+  soloChatMessages: Record<string, ChatMessage[]>; // key is friend email
+  openSoloChat: (friendEmail: string) => void;
+  closeSoloChat: (friendEmail: string) => void;
+  addSoloMessage: (friendEmail: string, message: ChatMessage) => void;
 }
 
 const RoomContext = createContext<RoomContextType | undefined>(undefined);
@@ -168,12 +174,7 @@ const initialPendingUsers: Record<string, PendingUser[]> = {
   ]
 };
 
-const initialMessages: Record<string, ChatMessage[]> = {
-    "a1b2c3": [
-        { user: "Alice", text: "Hey everyone! 👋 Just finished the first draft of the moodboard. Let me know what you think.", avatar: "https://placehold.co/40x40.png", hint: "woman smiling" },
-        { user: "Test User", text: "Awesome, I'll take a look now!", avatar: "https://placehold.co/40x40.png", hint: "user avatar" },
-    ]
-}
+const initialMessages: Record<string, ChatMessage[]> = {};
 
 
 export const RoomProvider = ({ children }: { children: ReactNode }) => {
@@ -191,6 +192,15 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
   const [participants, setParticipants] = useState<Record<string, Participant[]>>({});
   const [pendingUsers, setPendingUsers] = useState<Record<string, PendingUser[]>>(initialPendingUsers);
   const [messages, setMessages] = useState<Record<string, ChatMessage[]>>(initialMessages);
+
+  // --- Solo Chat State ---
+  const [activeSoloChats, setActiveSoloChats] = useState<string[]>([]);
+  const [soloChatMessages, setSoloChatMessages] = useState<Record<string, ChatMessage[]>>({
+      "alice@example.com": [
+          { user: "Alice", text: "Hey! How's it going?", avatar: "https://placehold.co/40x40.png", hint: "woman smiling" },
+          { user: "Test User", text: "Going great, thanks! Just working on the new feature.", avatar: "https://placehold.co/40x40.png", hint: "user avatar" },
+      ]
+  });
 
   useEffect(() => {
     if (user) {
@@ -405,6 +415,24 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
     });
   }, []);
 
+  const openSoloChat = useCallback((friendEmail: string) => {
+    setActiveSoloChats(prev => {
+      if (prev.includes(friendEmail)) return prev;
+      return [...prev, friendEmail];
+    });
+  }, []);
+
+  const closeSoloChat = useCallback((friendEmail: string) => {
+    setActiveSoloChats(prev => prev.filter(email => email !== friendEmail));
+  }, []);
+
+  const addSoloMessage = useCallback((friendEmail: string, message: ChatMessage) => {
+    setSoloChatMessages(prev => {
+        const chatHistory = prev[friendEmail] || [];
+        return { ...prev, [friendEmail]: [...chatHistory, message] };
+    });
+  }, []);
+
 
   return (
     <RoomContext.Provider value={{ 
@@ -441,6 +469,11 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
         makeHost,
         messages,
         addMessage,
+        activeSoloChats,
+        soloChatMessages,
+        openSoloChat,
+        closeSoloChat,
+        addSoloMessage
     }}>
       {children}
     </RoomContext.Provider>

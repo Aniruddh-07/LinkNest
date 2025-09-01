@@ -25,6 +25,9 @@ function DashboardHeader() {
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="p-0">
+          <SheetHeader className="sr-only">
+            <SheetTitle>Sidebar Menu</SheetTitle>
+          </SheetHeader>
            <Sidebar />
         </SheetContent>
       </Sheet>

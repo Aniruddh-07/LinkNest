@@ -9,7 +9,7 @@ import { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { SoloChatManager } from "@/components/chat/solo-chat-manager";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { PanelLeft } from "lucide-react";
 import { LinkNestIcon } from "@/components/icons";
@@ -25,6 +25,9 @@ function DashboardHeader() {
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="sm:max-w-xs p-0">
+          <SheetHeader className="sr-only">
+             <SheetTitle>Sidebar Menu</SheetTitle>
+          </SheetHeader>
           <div className="flex h-full max-h-screen flex-col">
             <Sidebar />
           </div>

@@ -168,60 +168,112 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <div className="grid gap-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User /> Profile Settings
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleProfileSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  disabled={isSavingProfile || loading}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={user?.email || ""}
-                  disabled
-                />
-              </div>
-              <Button type="submit" disabled={isSavingProfile || loading}>
-                {isSavingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Changes
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <Card>
+      <div className="grid gap-8 md:grid-cols-2">
+        <div className="space-y-8 md:col-span-1">
+            <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                <Users /> Manage Friends
+                <User /> Profile Settings
                 </CardTitle>
-                <CardDescription>
-                    Add, remove, or interact with your friends.
-                </CardDescription>
             </CardHeader>
             <CardContent>
-                <Link href="/dashboard/friends" passHref>
-                    <Button>
-                        Go to Friends Page <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                </Link>
+                <form onSubmit={handleProfileSubmit} className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="name">Name</Label>
+                    <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    disabled={isSavingProfile || loading}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                    id="email"
+                    type="email"
+                    value={user?.email || ""}
+                    disabled
+                    />
+                </div>
+                <Button type="submit" disabled={isSavingProfile || loading}>
+                    {isSavingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Changes
+                </Button>
+                </form>
             </CardContent>
-        </Card>
+            </Card>
 
-        <Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                    <Users /> Manage Friends
+                    </CardTitle>
+                    <CardDescription>
+                        Add, remove, or interact with your friends.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Link href="/dashboard/friends" passHref>
+                        <Button>
+                            Go to Friends Page <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                    </Link>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                    <Folder /> Label Management
+                    </CardTitle>
+                    <CardDescription>
+                    Edit or delete your custom room labels.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                    {labels.length > 0 ? (
+                        labels.map(label => (
+                        <div key={label.id} className="flex items-center gap-4 group">
+                            <div className="flex-1">
+                            <p className="font-medium">{label.name}</p>
+                            </div>
+                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleEditLabelClick(label)}>
+                                <Edit className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="icon" className="h-8 w-8">
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                    This will delete the label &quot;{label.name}&quot; and unassign it from all rooms. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteLabel(label.id)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                            </div>
+                        </div>
+                        ))
+                    ) : (
+                        <p className="text-sm text-muted-foreground text-center pt-4">You haven't created any labels yet.</p>
+                    )}
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+        
+        <Card className="md:col-span-1">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText /> Data Management
@@ -231,8 +283,8 @@ export default function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="lg:col-span-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
                     <Label>Date range</Label>
                     <Popover>
                         <PopoverTrigger asChild>
@@ -302,11 +354,11 @@ export default function SettingsPage() {
                 </div>
             </div>
 
-            <div className="border rounded-lg">
+            <div className="border rounded-lg overflow-x-auto">
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="w-[80px]">Type</TableHead>
+                            <TableHead>Type</TableHead>
                             <TableHead>Name</TableHead>
                             <TableHead>Room</TableHead>
                             <TableHead>Date</TableHead>
@@ -323,26 +375,28 @@ export default function SettingsPage() {
                                 <TableCell className="text-muted-foreground">{format(item.date, "LLL dd, y")}</TableCell>
                                 <TableCell className="text-muted-foreground">{item.size}</TableCell>
                                 <TableCell className="text-right">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownloadItem(item.name)}>
-                                        <Download className="h-4 w-4"/>
-                                    </Button>
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
-                                                <Trash2 className="h-4 w-4"/>
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                <AlertDialogDescription>This action cannot be undone and will permanently delete this item.</AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => handleDeleteSingleItem(item.id)}>Delete</AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
+                                    <div className="flex justify-end items-center">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownloadItem(item.name)}>
+                                            <Download className="h-4 w-4"/>
+                                        </Button>
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                                                    <Trash2 className="h-4 w-4"/>
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                    <AlertDialogDescription>This action cannot be undone and will permanently delete this item.</AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteSingleItem(item.id)}>Delete</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         )) : (
@@ -355,12 +409,12 @@ export default function SettingsPage() {
                     </TableBody>
                 </Table>
             </div>
-             <div className="flex flex-wrap gap-4 justify-between">
+             <div className="flex flex-col sm:flex-row gap-4 justify-between">
                 <Button variant="outline" onClick={resetFilters}>
                     <FilterX className="mr-2 h-4 w-4" />
                     Clear Filters
                 </Button>
-                <div className="flex flex-wrap gap-4">
+                <div className="flex flex-col sm:flex-row gap-4">
                     <Button variant="outline" onClick={handleExport} disabled={filteredData.length === 0}>
                         <Download className="mr-2 h-4 w-4" />
                         Export All
@@ -386,56 +440,6 @@ export default function SettingsPage() {
                         </AlertDialogContent>
                     </AlertDialog>
                 </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Folder /> Label Management
-            </CardTitle>
-            <CardDescription>
-              Edit or delete your custom room labels.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {labels.length > 0 ? (
-                labels.map(label => (
-                  <div key={label.id} className="flex items-center gap-4 group">
-                    <div className="flex-1">
-                      <p className="font-medium">{label.name}</p>
-                    </div>
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleEditLabelClick(label)}>
-                          <Edit className="h-4 w-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="destructive" size="icon" className="h-8 w-8">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This will delete the label &quot;{label.name}&quot; and unassign it from all rooms. This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDeleteLabel(label.id)}>Delete</AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground text-center pt-4">You haven't created any labels yet.</p>
-              )}
             </div>
           </CardContent>
         </Card>

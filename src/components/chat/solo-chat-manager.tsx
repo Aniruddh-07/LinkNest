@@ -4,52 +4,43 @@
 import { useRooms } from "@/context/RoomContext";
 import { SoloChatBox } from "./solo-chat-box";
 import { useMemo } from "react";
-import type { Friend } from "@/context/RoomContext";
+import type { Friend, Participant } from "@/context/RoomContext";
 
 export function SoloChatManager() {
-    const { userProfile, friends, participants, activeSoloChats, closeSoloChat } = useRooms();
+    const { friends, participants, activeSoloChats, closeSoloChat, userProfile } = useRooms();
 
-    // Combine friends and all unique participants into one list for chat
-    const potentialChatPartners = useMemo(() => {
-        const partners = new Map<string, Friend>();
-        
-        friends.forEach(f => {
-            partners.set(f.email, f);
-        });
+    const openChats = useMemo(() => {
+        if (activeSoloChats.length === 0) return [];
 
-        // Add participants from all rooms, avoiding duplicates and self
+        const allUsersMap = new Map<string, Friend | Participant>();
+
+        friends.forEach(f => allUsersMap.set(f.email, f));
+
         Object.values(participants).flat().forEach(p => {
-            if (p.email !== userProfile.email && !partners.has(p.email)) {
-                partners.set(p.email, {
-                    name: p.name,
-                    email: p.email,
-                    avatar: p.avatar,
-                    hint: p.hint,
-                });
+            if (!allUsersMap.has(p.email) && p.email !== userProfile.email) {
+                allUsersMap.set(p.email, p);
             }
         });
 
-        return Array.from(partners.values());
-    }, [friends, participants, userProfile.email]);
-    
-    const openChats = useMemo(() => 
-        potentialChatPartners.filter(p => activeSoloChats.includes(p.email)),
-        [potentialChatPartners, activeSoloChats]
-    );
-    
+        return activeSoloChats
+            .map(email => allUsersMap.get(email))
+            .filter((p): p is Friend => !!p);
+
+    }, [activeSoloChats, friends, participants, userProfile.email]);
+
     if (openChats.length === 0) {
         return null;
     }
 
     return (
         <div className="fixed bottom-0 right-4 flex items-end gap-4 z-[100]">
-             {openChats.map((partner) => (
-                <SoloChatBox 
+            {openChats.map((partner) => (
+                <SoloChatBox
                     key={partner.email}
                     friend={partner}
                     onClose={closeSoloChat}
                 />
             ))}
         </div>
-    )
+    );
 }

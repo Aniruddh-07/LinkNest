@@ -6,11 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { User, FileText, Users, Download, Trash2, UserPlus, X, Image as ImageIcon, Video, MessageSquare, File as FileIcon, Calendar as CalendarIcon, FilterX, Folder, Edit, Loader2 } from "lucide-react";
+import { User, FileText, Users, Download, Trash2, UserPlus, Image as ImageIcon, Video, MessageSquare, File as FileIcon, Calendar as CalendarIcon, FilterX, Folder, Edit, Loader2, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useRooms, type Label as RoomLabel, type SharedData, type DataType, type Friend } from "@/context/RoomContext";
+import { useRooms, type Label as RoomLabel, type SharedData, type DataType } from "@/context/RoomContext";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -21,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { useAuth } from "@/context/AuthContext";
+import Link from "next/link";
 
 const dataTypeIcons: Record<DataType, React.ElementType> = {
     Image: ImageIcon,
@@ -36,17 +36,13 @@ export default function SettingsPage() {
   const { 
     rooms: joinedRooms, 
     labels, updateLabel, deleteLabel,
-    sharedData, deleteSharedItem, deleteAllSharedData,
-    friends, addFriend, removeFriend
+    sharedData, deleteSharedItem, deleteAllSharedData
   } = useRooms();
 
   // Profile State
   const [name, setName] = useState(user?.displayName || "");
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   
-  // Friends State
-  const [friendEmail, setFriendEmail] = useState("");
-
   // Data Management State
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [roomFilter, setRoomFilter] = useState<string>("all");
@@ -131,38 +127,6 @@ export default function SettingsPage() {
     });
   }
 
-  const handleAddFriend = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!friendEmail.trim() || !friendEmail.includes('@') || friends.some(f => f.email === friendEmail)) {
-        toast({
-            variant: "destructive",
-            title: "Invalid Email",
-            description: "Please enter a valid email that isn't already on your friends list."
-        });
-        return;
-    }
-    const newFriend: Friend = {
-        name: friendEmail.split('@')[0], // Mock name
-        email: friendEmail,
-        avatar: "https://placehold.co/40x40.png",
-        hint: "person avatar"
-    }
-    addFriend(newFriend);
-    setFriendEmail("");
-    toast({
-        title: "Friend Added",
-        description: `${newFriend.name} has been added to your friends list.`
-    });
-  }
-
-  const handleRemoveFriend = (emailToRemove: string) => {
-    removeFriend(emailToRemove);
-    toast({
-        title: "Friend Removed",
-        description: "The user has been removed from your friends list."
-    });
-  }
-  
   const resetFilters = () => {
     setDateRange(undefined);
     setRoomFilter("all");
@@ -237,6 +201,24 @@ export default function SettingsPage() {
               </Button>
             </form>
           </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                <Users /> Manage Friends
+                </CardTitle>
+                <CardDescription>
+                    Add, remove, or interact with your friends.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Link href="/dashboard/friends" passHref>
+                    <Button>
+                        Go to Friends Page <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                </Link>
+            </CardContent>
         </Card>
 
         <Card>
@@ -404,55 +386,6 @@ export default function SettingsPage() {
                         </AlertDialogContent>
                     </AlertDialog>
                 </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users /> Friends List
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleAddFriend} className="flex gap-2 mb-6">
-                <Input 
-                    type="email" 
-                    placeholder="friend@example.com"
-                    value={friendEmail}
-                    onChange={(e) => setFriendEmail(e.target.value)}
-                    required
-                />
-                <Button type="submit">
-                    <UserPlus className="mr-2 h-4 w-4"/>
-                    Add Friend
-                </Button>
-            </form>
-
-            <Separator />
-
-            <div className="space-y-4 pt-6">
-                <h4 className="text-sm font-medium text-muted-foreground">Your Friends ({friends.length})</h4>
-                {friends.length > 0 ? (
-                    friends.map(friend => (
-                        <div key={friend.email} className="flex items-center gap-4 group">
-                            <Avatar>
-                                <AvatarImage src={friend.avatar} data-ai-hint={friend.hint} />
-                                <AvatarFallback>{friend.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                                <p className="font-medium">{friend.name}</p>
-                                <p className="text-xs text-muted-foreground">{friend.email}</p>
-                            </div>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100" onClick={() => handleRemoveFriend(friend.email)}>
-                                <X className="h-4 w-4" />
-                                <span className="sr-only">Remove Friend</span>
-                            </Button>
-                        </div>
-                    ))
-                ) : (
-                    <p className="text-sm text-muted-foreground text-center pt-4">You haven't added any friends yet.</p>
-                )}
             </div>
           </CardContent>
         </Card>

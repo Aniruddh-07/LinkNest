@@ -23,7 +23,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LinkNestIcon } from "./icons";
-import { LogOut, Moon, Settings, Sun, Users, MoreHorizontal, Trash2, Compass, MinusCircle, PlusCircle, Folder, Tag, Loader2 } from "lucide-react";
+import { LogOut, Moon, Settings, Sun, Users, MoreHorizontal, Trash2, Compass, MinusCircle, PlusCircle, Folder, Tag, Loader2, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRooms, type Label as RoomLabel } from "@/context/RoomContext";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -189,13 +189,28 @@ export function Sidebar() {
       </div>
       <div className="flex-1 overflow-auto py-2">
         <nav className="grid items-start px-4 text-sm font-medium">
-          <Button variant="outline" className="mb-4" onClick={() => router.push('/dashboard/browse')}>
-            <Compass className="mr-2 h-4 w-4" />
-            Browse Public Rooms
-          </Button>
-
-          <div className="px-3 py-2 flex items-center justify-between">
-            <h3 className="text-xs font-semibold text-muted-foreground">LABELS</h3>
+            <Link
+                href="/dashboard/browse"
+                className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+                pathname === "/dashboard/browse" && "bg-muted text-primary"
+                )}
+            >
+                <Compass className="h-4 w-4" />
+                Browse
+            </Link>
+            <Link
+                href="/dashboard/friends"
+                className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+                pathname === "/dashboard/friends" && "bg-muted text-primary"
+                )}
+            >
+                <User className="h-4 w-4" />
+                Friends
+            </Link>
+          <div className="px-3 py-2 flex items-center justify-between mt-4">
+            <h3 className="text-xs font-semibold text-muted-foreground">MY ROOMS</h3>
             <Dialog open={isLabelDialogOpen} onOpenChange={setIsLabelDialogOpen}>
                 <DialogTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-6 w-6">

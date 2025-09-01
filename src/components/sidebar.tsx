@@ -177,7 +177,7 @@ export function Sidebar() {
 
   return (
     <>
-    <aside className="bg-background flex flex-col border-r h-full">
+    <aside className="bg-background flex flex-col h-full">
       <div className="flex h-[60px] items-center border-b px-6">
         <Link
           href="/dashboard"

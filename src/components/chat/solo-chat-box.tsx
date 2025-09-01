@@ -52,7 +52,6 @@ export function SoloChatBox({ friend, onClose, defaultPosition }: SoloChatBoxPro
             user: userProfile.name,
             text: textToSend,
             avatar: "https://placehold.co/40x40.png",
-            hint: "user avatar",
         };
 
         addSoloMessage(friend.email, newMessage);
@@ -85,7 +84,7 @@ export function SoloChatBox({ friend, onClose, defaultPosition }: SoloChatBoxPro
                 <CardHeader className="flex flex-row items-center justify-between p-3 border-b bg-muted/50 rounded-t-lg handle cursor-move">
                     <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8">
-                            <AvatarImage src={friend.avatar} data-ai-hint={friend.hint} />
+                            <AvatarImage src={friend.avatar} />
                             <AvatarFallback>{friend.name.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <p className="font-semibold">{friend.name}</p>
@@ -100,7 +99,7 @@ export function SoloChatBox({ friend, onClose, defaultPosition }: SoloChatBoxPro
                             {messages.map((msg, index) => (
                                 <div key={index} className={cn("flex items-start gap-3", msg.user === userProfile.name ? 'flex-row-reverse' : '')}>
                                     <Avatar className="h-8 w-8">
-                                    <AvatarImage src={msg.avatar} data-ai-hint={msg.hint} />
+                                    <AvatarImage src={msg.avatar} />
                                     <AvatarFallback>{msg.user.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <div className={cn("rounded-lg px-3 py-2 text-sm max-w-[85%]", msg.user === userProfile.name ? 'bg-primary text-primary-foreground' : 'bg-muted')}>

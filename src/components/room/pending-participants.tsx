@@ -32,7 +32,7 @@ export function PendingParticipants({ pendingUsers, onApprove, onDecline }: Pend
         {pendingUsers.map((user) => (
           <div key={user.email} className="flex items-center gap-3">
             <Avatar className="h-9 w-9">
-              <AvatarImage src={user.avatar} data-ai-hint={user.hint} />
+              <AvatarImage src={user.avatar} />
               <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
             </Avatar>
             <p className="font-medium flex-1 truncate">{user.name}</p>

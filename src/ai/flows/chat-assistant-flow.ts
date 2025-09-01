@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A chat assistant that can participate in room conversations.
@@ -34,7 +35,7 @@ const prompt = ai.definePrompt({
   name: 'chatAssistantPrompt',
   input: {schema: ChatAssistantInputSchema},
   output: {schema: ChatAssistantOutputSchema},
-  prompt: `You are a helpful and friendly AI assistant named 'LinkNest AI' inside a collaborative chat room. Your goal is to be concise and helpful.
+  prompt: `You are a helpful and friendly AI assistant inside a collaborative chat room. Your goal is to be concise and helpful.
 
 Analyze the conversation history and provide a relevant response. The last message is from "You". Respond to that message in the context of the whole conversation.
 

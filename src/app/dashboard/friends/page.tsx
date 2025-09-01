@@ -30,7 +30,7 @@ function FriendRequestCard({ requests, onAccept, onDecline }: { requests: Friend
                 {requests.map(req => (
                     <div key={req.email} className="flex items-center gap-4">
                         <Avatar className="h-10 w-10">
-                            <AvatarImage src={req.avatar} data-ai-hint={req.hint} />
+                            <AvatarImage src={req.avatar} />
                             <AvatarFallback>{req.name.charAt(0)}</AvatarFallback>
                         </Avatar>
                          <div className="flex-1">
@@ -185,7 +185,7 @@ export default function FriendsPage() {
                                                 checked={selectedFriends.some(f => f.email === friend.email)}
                                             />
                                             <Avatar className="h-10 w-10">
-                                                <AvatarImage src={friend.avatar} data-ai-hint={friend.hint} />
+                                                <AvatarImage src={friend.avatar} />
                                                 <AvatarFallback>{friend.name.charAt(0)}</AvatarFallback>
                                             </Avatar>
                                             <div className="flex-1">

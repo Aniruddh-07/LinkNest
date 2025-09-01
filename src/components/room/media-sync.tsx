@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -38,7 +39,7 @@ export function MediaSync() {
         </form>
 
         <div className="relative aspect-video w-full rounded-lg overflow-hidden bg-muted">
-            <Image src="https://placehold.co/1280x720.png" layout="fill" objectFit="cover" alt="Video placeholder" data-ai-hint="youtube player" />
+            <Image src="https://placehold.co/1280x720.png" layout="fill" objectFit="cover" alt="Video placeholder" />
             <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
                 <Button size="icon" variant="secondary" className="h-16 w-16 rounded-full" onClick={() => setIsPlaying(!isPlaying)}>
                     {isPlaying ? <Pause className="h-8 w-8"/> : <Play className="h-8 w-8" />}

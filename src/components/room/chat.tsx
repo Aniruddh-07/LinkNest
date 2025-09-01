@@ -40,7 +40,6 @@ export function Chat() {
       user: userProfile.name,
       text: userMessageText,
       avatar: "https://placehold.co/40x40.png", // This should probably come from user profile
-      hint: "user avatar",
     };
 
     addMessage(roomId, newMessage);
@@ -76,7 +75,7 @@ export function Chat() {
             ) : roomMessages.map((msg, index) => (
               <div key={index} className={`flex items-start gap-3 ${msg.user === userProfile.name ? 'flex-row-reverse' : ''}`}>
                  <Avatar className="h-9 w-9">
-                    <AvatarImage src={msg.avatar} data-ai-hint={msg.hint} />
+                    <AvatarImage src={msg.avatar} />
                     <AvatarFallback>{msg.user.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className={`rounded-lg px-3 py-2 text-sm max-w-[80%] ${msg.user === userProfile.name ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>

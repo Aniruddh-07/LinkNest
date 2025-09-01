@@ -276,7 +276,6 @@ export function Sidebar() {
                 <AvatarImage
                   src="https://placehold.co/40x40.png"
                   alt="@user"
-                  data-ai-hint="user avatar"
                 />
                 <AvatarFallback>{user.displayName?.charAt(0) || user.email?.charAt(0)}</AvatarFallback>
               </Avatar>

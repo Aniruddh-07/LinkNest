@@ -40,14 +40,12 @@ export interface Friend {
   name: string;
   email: string;
   avatar: string;
-  hint: string;
 }
 
 export interface Participant {
   name: string;
   email: string;
   avatar: string;
-  hint: string;
   isHost: boolean;
   isMuted: boolean;
   isCameraOff: boolean;
@@ -57,14 +55,12 @@ export interface PendingUser {
   name: string;
   email: string;
   avatar: string;
-  hint: string;
 }
 
 export interface ChatMessage {
   user: string;
   text: string;
   avatar: string;
-  hint: string;
 }
 
 // Renamed from Friend for clarity
@@ -72,7 +68,6 @@ export interface FriendRequest {
   name: string;
   email: string;
   avatar: string;
-  hint: string;
 }
 
 
@@ -98,7 +93,7 @@ interface RoomContextType {
   deleteSharedItem: (itemId: string) => void;
   deleteAllSharedData: () => void;
   friends: Friend[];
-  sendFriendRequest: (friendData: Omit<Friend, 'hint'> & { hint?: string }) => void; // Now sends a request
+  sendFriendRequest: (friendData: Friend) => void; // Now sends a request
   removeFriend: (email: string) => void;
   participants: Record<string, Participant[]>;
   pendingUsers: Record<string, PendingUser[]>;
@@ -154,40 +149,40 @@ const initialSharedData: SharedData[] = [
 ];
 
 const initialFriends: Friend[] = [
-  { name: "Alice", email: "alice@example.com", avatar: "https://placehold.co/40x40.png", hint: "woman smiling" },
-  { name: "Bob", email: "bob@example.com", avatar: "https://placehold.co/40x40.png", hint: "man portrait" },
+  { name: "Alice", email: "alice@example.com", avatar: "https://placehold.co/40x40.png" },
+  { name: "Bob", email: "bob@example.com", avatar: "https://placehold.co/40x40.png" },
 ];
 
 const initialFriendRequests: FriendRequest[] = [
-  { name: "Charlie", email: "charlie@example.com", avatar: "https://placehold.co/40x40.png", hint: "person glasses" },
-  { name: "Frank", email: "frank@example.com", avatar: "https://placehold.co/40x40.png", hint: "man smiling portrait" }
+  { name: "Charlie", email: "charlie@example.com", avatar: "https://placehold.co/40x40.png" },
+  { name: "Frank", email: "frank@example.com", avatar: "https://placehold.co/40x40.png" }
 ]
 
 const getInitialParticipants = (user: UserProfile | null): Record<string, Participant[]> => {
     if (!user) return {};
     return {
         "a1b2c3": [
-            { name: user.name, email: user.email, avatar: "https://placehold.co/40x40.png", hint: "user avatar", isHost: true, isMuted: false, isCameraOff: false },
-            { name: "Alice", email: "alice@example.com", avatar: "https://placehold.co/40x40.png", hint: "woman smiling", isHost: false, isMuted: false, isCameraOff: false },
+            { name: user.name, email: user.email, avatar: "https://placehold.co/40x40.png", isHost: true, isMuted: false, isCameraOff: false },
+            { name: "Alice", email: "alice@example.com", avatar: "https://placehold.co/40x40.png", isHost: false, isMuted: false, isCameraOff: false },
         ],
         "g7h8i9": [
-            { name: user.name, email: user.email, avatar: "https://placehold.co/40x40.png", hint: "user avatar", isHost: true, isMuted: false, isCameraOff: false },
-            { name: "Bob", email: "bob@example.com", avatar: "https://placehold.co/40x40.png", hint: "man portrait", isHost: false, isMuted: true, isCameraOff: false },
-            { name: "Charlie", email: "charlie@example.com", avatar: "https://placehold.co/40x40.png", hint: "person glasses", isHost: false, isMuted: false, isCameraOff: true },
+            { name: user.name, email: user.email, avatar: "https://placehold.co/40x40.png", isHost: true, isMuted: false, isCameraOff: false },
+            { name: "Bob", email: "bob@example.com", avatar: "https://placehold.co/40x40.png", isHost: false, isMuted: true, isCameraOff: false },
+            { name: "Charlie", email: "charlie@example.com", avatar: "https://placehold.co/40x40.png", isHost: false, isMuted: false, isCameraOff: true },
         ],
         "j1k2l3": [
-            { name: user.name, email: user.email, avatar: "https://placehold.co/40x40.png", hint: "user avatar", isHost: true, isMuted: false, isCameraOff: false },
+            { name: user.name, email: user.email, avatar: "https://placehold.co/40x40.png", isHost: true, isMuted: false, isCameraOff: false },
         ],
         "d4e5f6": [
-            { name: user.name, email: user.email, avatar: "https://placehold.co/40x40.png", hint: "user avatar", isHost: false, isMuted: false, isCameraOff: false },
+            { name: user.name, email: user.email, avatar: "https://placehold.co/40x40.png", isHost: false, isMuted: false, isCameraOff: false },
         ],
     };
 };
 
 const initialPendingUsers: Record<string, PendingUser[]> = {
   "a1b2c3": [
-    { name: "David", email: "david@example.com", avatar: "https://placehold.co/40x40.png", hint: "man glasses" },
-    { name: "Eve", email: "eve@example.com", avatar: "https://placehold.co/40x40.png", hint: "woman smiling portrait" },
+    { name: "David", email: "david@example.com", avatar: "https://placehold.co/40x40.png" },
+    { name: "Eve", email: "eve@example.com", avatar: "https://placehold.co/40x40.png" },
   ]
 };
 
@@ -214,8 +209,8 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
   const [activeSoloChats, setActiveSoloChats] = useState<string[]>([]);
   const [soloChatMessages, setSoloChatMessages] = useState<Record<string, ChatMessage[]>>({
       "alice@example.com": [
-          { user: "Alice", text: "Hey! How's it going?", avatar: "https://placehold.co/40x40.png", hint: "woman smiling" },
-          { user: "Test User", text: "Going great, thanks! Just working on the new feature.", avatar: "https://placehold.co/40x40.png", hint: "user avatar" },
+          { user: "Alice", text: "Hey! How's it going?", avatar: "https://placehold.co/40x40.png" },
+          { user: "Test User", text: "Going great, thanks! Just working on the new feature.", avatar: "https://placehold.co/40x40.png" },
       ]
   });
 
@@ -248,7 +243,6 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
         name: userProfile.name,
         email: userProfile.email,
         avatar: "https://placehold.co/40x40.png",
-        hint: "user avatar",
         isHost: true,
         isMuted: false,
         isCameraOff: false,
@@ -362,7 +356,7 @@ export const RoomProvider = ({ children }: { children: ReactNode }) => {
     setSharedData([]);
   }, []);
 
-  const sendFriendRequest = useCallback((friendData: Omit<Friend, 'hint'> & { hint?: string }) => {
+  const sendFriendRequest = useCallback((friendData: Friend) => {
     // In a real app, this would send a request to a backend.
     // For this mock, we'll just log it. The request will appear in the recipient's list.
     console.log("Friend request sent to:", friendData.email);

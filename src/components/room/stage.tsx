@@ -51,7 +51,7 @@ const GalleryView = ({ participants }: { participants: Participant[] }) => {
                         p.email === userProfile.email ? (
                            <video ref={myVideoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
                         ) : (
-                           <Image src="https://placehold.co/640x360.png" layout="fill" objectFit="cover" alt={`${p.name}'s video feed`} data-ai-hint="person video call" />
+                           <Image src="https://placehold.co/640x360.png" layout="fill" objectFit="cover" alt={`${p.name}'s video feed`} />
                         )
                      )}
                      <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 rounded-md text-sm font-medium">{p.name}</div>

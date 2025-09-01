@@ -31,7 +31,6 @@ export function ParticipantList({ isHost = false, participants, onRemove, onTogg
             name: participant.name,
             email: participant.email,
             avatar: participant.avatar,
-            hint: participant.hint,
         });
         toast({
             title: "Friend Request Sent",
@@ -53,7 +52,7 @@ export function ParticipantList({ isHost = false, participants, onRemove, onTogg
             return (
               <div key={p.email} className="flex items-center gap-4 group">
                 <Avatar>
-                  <AvatarImage src={p.avatar} data-ai-hint={p.hint} />
+                  <AvatarImage src={p.avatar} />
                   <AvatarFallback>{p.name.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <p className="font-medium flex-1 truncate">{p.name} {p.email === userProfile.email && '(You)'}</p>

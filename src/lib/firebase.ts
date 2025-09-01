@@ -1,5 +1,26 @@
 
-// This file is intentionally left blank.
-// Firebase initialization logic has been moved to AuthContext.tsx to resolve build-time issues.
-// Keeping this file prevents import errors in other parts of the application that may reference it,
-// though it no longer exports anything.
+// Import the functions you need from the SDKs you need
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
+
+// Helper function to check if all firebase config keys are present
+const isFirebaseConfigured = () => {
+    return Object.values(firebaseConfig).every(value => Boolean(value));
+}
+
+// Initialize Firebase
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
+
+export { app, auth, isFirebaseConfigured, firebaseConfig };

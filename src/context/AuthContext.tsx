@@ -2,8 +2,24 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import type { User } from 'firebase/auth';
+import { 
+  onAuthStateChanged, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signOut,
+  updateProfile as firebaseUpdateProfile,
+  sendEmailVerification,
+  GoogleAuthProvider,
+  GithubAuthProvider,
+  signInWithPopup,
+  sendPasswordResetEmail,
+  verifyPasswordResetCode as firebaseVerifyPasswordResetCode,
+  confirmPasswordReset as firebaseConfirmPasswordReset,
+  type User
+} from 'firebase/auth';
+import { auth, isFirebaseConfigured, firebaseConfig } from '@/lib/firebase';
 import { usePathname, useRouter } from 'next/navigation';
+import Cookies from 'js-cookie';
 import { AnimatedLogoLoader, DashboardSkeleton } from '@/components/loaders';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -26,67 +42,117 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// This is our hardcoded mock user for testing purposes
-const mockUser: User = {
-  uid: 'test-user-123',
-  email: 'test@example.com',
-  displayName: 'Test User',
-  emailVerified: true,
-  photoURL: null,
-  providerData: [],
-  // Cast to any to satisfy the complex User type from Firebase
-  // We don't need these methods for the mock.
-} as any;
-
-
+// --- Auth Provider Component ---
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(mockUser); // Always logged in with mock user
-  const [loading, setLoading] = useState(false); // Set loading to false as we are not fetching anything
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
-  
-  // No need for effects to check auth status, as we are always logged in.
 
-  // --- Mocked Auth Functions ---
+  useEffect(() => {
+    if (!isFirebaseConfigured()) {
+      setLoading(false);
+      return;
+    }
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setUser(user);
+        const token = await user.getIdToken();
+        Cookies.set('firebaseIdToken', token, { secure: true, sameSite: 'strict' });
+
+        if (pathname === '/login' || pathname === '/signup' || pathname === '/') {
+          router.replace('/dashboard');
+        }
+      } else {
+        setUser(null);
+        Cookies.remove('firebaseIdToken');
+        if (pathname.startsWith('/dashboard')) {
+          router.replace('/login');
+        }
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [router, pathname]);
+
+
   const login = async (email: string, password: string) => {
-    console.log("Mock login called, but user is already authenticated.");
-    return { success: true };
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
   };
 
   const signup = async (email: string, password: string, name: string) => {
-    console.log("Mock signup called, but user is already authenticated.");
-    return { success: true };
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      await firebaseUpdateProfile(userCredential.user, { displayName: name });
+      await sendEmailVerification(userCredential.user);
+      return { success: true, verificationSent: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
   };
   
-  const socialSignIn = async (provider: 'google' | 'github') => {
-    console.log(`Mock social sign-in with ${provider} called.`);
-    return { success: true };
+  const socialSignIn = async (provider: GoogleAuthProvider | GithubAuthProvider) => {
+    try {
+      await signInWithPopup(auth, provider);
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
   }
 
-  const signInWithGoogle = () => socialSignIn('google');
-  const signInWithGitHub = () => socialSignIn('github');
+  const signInWithGoogle = () => socialSignIn(new GoogleAuthProvider());
+  const signInWithGitHub = () => socialSignIn(new GithubAuthProvider());
   
-  const sendPasswordReset = async (email: string) => ({ success: true });
-  const verifyPasswordResetCode = async (code: string) => ({ success: true });
-  const confirmPasswordReset = async (code: string, newPassword: string) => ({ success: true });
+  const sendPasswordReset = async (email: string) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  };
+  
+  const verifyPasswordResetCode = async (code: string) => {
+    try {
+      await firebaseVerifyPasswordResetCode(auth, code);
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  };
+
+  const confirmPasswordReset = async (code: string, newPassword: string) => {
+    try {
+      await firebaseConfirmPasswordReset(auth, code, newPassword);
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  };
 
   const logout = async () => {
-    console.log("Mock logout called.");
-    // In a real app, this would clear the user state.
-    // For now, we'll keep the user logged in to avoid breaking the flow.
-    router.push('/');
+    await signOut(auth);
+    router.push('/login');
   };
   
   const updateProfile = async (profileData: { displayName?: string; photoURL?: string }) => {
-    if(user) {
-      setUser({ ...user, ...profileData });
+    if(auth.currentUser) {
+      await firebaseUpdateProfile(auth.currentUser, profileData);
+      setUser(auth.currentUser); // Force re-render with updated info
     }
   };
 
   const value = {
     user,
     loading,
-    isFirebaseConfigured: true, // Mocked as true
+    isFirebaseConfigured: isFirebaseConfigured(),
     signup,
     login,
     logout,
@@ -98,9 +164,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     confirmPasswordReset,
   };
   
+  // Conditionally render skeleton loaders
+  const isAuthPage = ['/login', '/signup', '/forgot-password', '/reset-password'].includes(pathname);
+  
+  if (loading && !isAuthPage && pathname !== '/') {
+    return <DashboardSkeleton />;
+  }
+
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
+// --- Custom Hook ---
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -109,9 +183,26 @@ export const useAuth = () => {
   return context;
 };
 
-// This component is not used in the mock flow but kept for structure
-export const FirebaseWarning = () => null;
 
+// --- Helper Components ---
+export function FirebaseWarning() {
+    return (
+        <div className="mb-4 rounded-lg border border-yellow-300 bg-yellow-50 p-4 text-sm text-yellow-800">
+            <h3 className="font-bold">Firebase Not Configured</h3>
+            <p className="mt-1">
+                This feature requires Firebase. Please create an `.env` file with your Firebase project's configuration keys to proceed.
+            </p>
+            <pre className="mt-2 text-xs overflow-auto rounded bg-yellow-100 p-2">
+{`NEXT_PUBLIC_FIREBASE_API_KEY=...
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
+NEXT_PUBLIC_FIREBASE_APP_ID=...`}
+            </pre>
+        </div>
+    )
+}
 
 export const AuthFormSkeleton = () => {
     return (

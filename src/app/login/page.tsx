@@ -1,13 +1,11 @@
 
-// import { LoginForm } from "@/components/auth/login-form";
+import { LoginForm } from "@/components/auth/login-form";
 import Link from "next/link";
 import { LinkNestIcon } from "@/components/icons";
-import { Button } from "@/components/ui/button";
 
 export default function LoginPage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
-      {/*
       <div className="absolute top-6 left-6">
         <Link
           href="/"
@@ -18,14 +16,6 @@ export default function LoginPage() {
         </Link>
       </div>
       <LoginForm />
-      */}
-      <div className="text-center">
-        <h1 className="text-2xl font-bold">Login Disabled</h1>
-        <p className="text-muted-foreground">Authentication is temporarily disabled.</p>
-        <Button asChild variant="link">
-          <Link href="/dashboard">Go to Dashboard</Link>
-        </Button>
-      </div>
     </main>
   );
 }

@@ -139,7 +139,7 @@ export function SignupForm() {
             <Label htmlFor="password">Password</Label>
             <Input id="password" type="password" required value={password} onChange={e => setPassword(e.target.value)} disabled={isFormDisabled} />
           </div>
-          <Button type="submit" className="w-full" disabled={isFormDisabled}>
+          <Button type="submit" className="w-full" disabled={isFormDisabled || !!message}>
             {totalLoading && <Loader2 className="animate-spin" />}
             Create an account
           </Button>

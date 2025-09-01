@@ -34,7 +34,7 @@ function GoogleIcon() {
 }
 
 export function LoginForm() {
-  const { login, signInWithGoogle, signInWithGitHub, isFirebaseConfigured, loading: authLoading } = useAuth();
+  const { login, signInWithGoogle, signInWithGitHub, isFirebaseConfigured, loading: authLoading, user } = useAuth();
   const [email, setEmail] = useState("test@example.com");
   const [password, setPassword] = useState("password");
   const [error, setError] = useState<string | null>(null);
@@ -76,8 +76,22 @@ export function LoginForm() {
   const totalLoading = authLoading || isLoading;
   const isFormDisabled = totalLoading || isSocialLoading || !isFirebaseConfigured;
 
-  if (authLoading) {
+  if (authLoading && !user) {
     return <AuthFormSkeleton />;
+  }
+  
+  if (user) {
+      return (
+        <Card className="mx-auto max-w-sm w-full">
+            <CardHeader className="space-y-1 text-center">
+                <CardTitle className="text-2xl font-bold">Already Logged In</CardTitle>
+                <CardDescription>You are already logged in. Redirecting you...</CardDescription>
+            </CardHeader>
+             <CardContent className="flex justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </CardContent>
+        </Card>
+      )
   }
 
   return (

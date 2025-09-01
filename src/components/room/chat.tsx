@@ -10,7 +10,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageSquare, Send, Smile } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useRooms, type ChatMessage } from "@/context/RoomContext";
-import { useAuth } from "@/context/AuthContext";
 
 export function Chat() {
   const [inputValue, setInputValue] = useState("");

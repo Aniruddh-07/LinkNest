@@ -2,6 +2,7 @@
 // import { LoginForm } from "@/components/auth/login-form";
 import Link from "next/link";
 import { LinkNestIcon } from "@/components/icons";
+import { Button } from "@/components/ui/button";
 
 export default function LoginPage() {
   return (

@@ -10,17 +10,15 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { X, Send, Paperclip, Mic } from "lucide-react";
 import { cn } from "@/lib/utils";
-import Draggable from 'react-draggable';
 import { useToast } from "@/hooks/use-toast";
 
 
 interface SoloChatBoxProps {
     friend: Friend;
     onClose: (email: string) => void;
-    defaultPosition?: {x: number, y: number};
 }
 
-export function SoloChatBox({ friend, onClose, defaultPosition }: SoloChatBoxProps) {
+export function SoloChatBox({ friend, onClose }: SoloChatBoxProps) {
     const { 
         userProfile,
         soloChatMessages,
@@ -32,7 +30,6 @@ export function SoloChatBox({ friend, onClose, defaultPosition }: SoloChatBoxPro
     const messages = soloChatMessages[friend.email] || [];
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const nodeRef = useRef(null);
 
     useEffect(() => {
         if (scrollAreaRef.current) {
@@ -80,52 +77,50 @@ export function SoloChatBox({ friend, onClose, defaultPosition }: SoloChatBoxPro
     }
 
     return (
-        <Draggable handle=".handle" defaultPosition={defaultPosition} nodeRef={nodeRef}>
-            <Card ref={nodeRef} className="w-80 h-[28rem] flex flex-col shadow-2xl rounded-lg cursor-default fixed z-[999]">
-                <CardHeader className="flex flex-row items-center justify-between p-3 border-b bg-muted/50 rounded-t-lg handle cursor-move">
-                    <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
-                            <AvatarImage src={friend.avatar} data-ai-hint={friend.hint} />
-                            <AvatarFallback>{friend.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <p className="font-semibold">{friend.name}</p>
-                    </div>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 cursor-pointer" onClick={() => onClose(friend.email)}>
-                        <X className="h-4 w-4" />
-                    </Button>
-                </CardHeader>
-                <div className="p-0 flex-1 flex flex-col bg-background">
-                    <ScrollArea className="flex-1" ref={scrollAreaRef}>
-                        <div className="p-4 space-y-4">
-                            {messages.map((msg, index) => (
-                                <div key={index} className={cn("flex items-start gap-3", msg.user === userProfile.name ? 'flex-row-reverse' : '')}>
-                                    <Avatar className="h-8 w-8">
-                                    <AvatarImage src={msg.avatar} data-ai-hint={msg.hint} />
-                                    <AvatarFallback>{msg.user.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <div className={cn("rounded-lg px-3 py-2 text-sm max-w-[85%]", msg.user === userProfile.name ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
-                                    <p>{msg.text}</p>
-                                </div>
-                                </div>
-                            ))}
-                        </div>
-                    </ScrollArea>
-                    <div className="p-2 border-t">
-                        <form onSubmit={handleSendMessage} className="w-full flex items-center gap-2">
-                            <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
-                            <Button type="button" variant="ghost" size="icon" onClick={handleAttachmentClick}><Paperclip className="h-4 w-4" /></Button>
-                            <Input 
-                                placeholder="Type a message..." 
-                                value={inputValue}
-                                onChange={(e) => setInputValue(e.target.value)}
-                                autoComplete="off"
-                            />
-                            <Button type="button" variant="ghost" size="icon" onClick={handleMicClick}><Mic className="h-4 w-4" /></Button>
-                            <Button type="submit" size="icon"><Send className="h-4 w-4" /></Button>
-                        </form>
-                    </div>
+        <Card className="w-80 h-[28rem] flex flex-col shadow-2xl rounded-lg z-50">
+            <CardHeader className="flex flex-row items-center justify-between p-3 border-b bg-muted/50 rounded-t-lg">
+                <div className="flex items-center gap-2">
+                    <Avatar className="h-8 w-8">
+                        <AvatarImage src={friend.avatar} data-ai-hint={friend.hint} />
+                        <AvatarFallback>{friend.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <p className="font-semibold">{friend.name}</p>
                 </div>
-            </Card>
-        </Draggable>
+                <Button variant="ghost" size="icon" className="h-7 w-7 cursor-pointer" onClick={() => onClose(friend.email)}>
+                    <X className="h-4 w-4" />
+                </Button>
+            </CardHeader>
+            <div className="p-0 flex-1 flex flex-col bg-background">
+                <ScrollArea className="flex-1" ref={scrollAreaRef}>
+                    <div className="p-4 space-y-4">
+                        {messages.map((msg, index) => (
+                            <div key={index} className={cn("flex items-start gap-3", msg.user === userProfile.name ? 'flex-row-reverse' : '')}>
+                                <Avatar className="h-8 w-8">
+                                <AvatarImage src={msg.avatar} data-ai-hint={msg.hint} />
+                                <AvatarFallback>{msg.user.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div className={cn("rounded-lg px-3 py-2 text-sm max-w-[85%]", msg.user === userProfile.name ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
+                                <p>{msg.text}</p>
+                            </div>
+                            </div>
+                        ))}
+                    </div>
+                </ScrollArea>
+                <div className="p-2 border-t">
+                    <form onSubmit={handleSendMessage} className="w-full flex items-center gap-2">
+                        <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
+                        <Button type="button" variant="ghost" size="icon" onClick={handleAttachmentClick}><Paperclip className="h-4 w-4" /></Button>
+                        <Input 
+                            placeholder="Type a message..." 
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            autoComplete="off"
+                        />
+                        <Button type="button" variant="ghost" size="icon" onClick={handleMicClick}><Mic className="h-4 w-4" /></Button>
+                        <Button type="submit" size="icon"><Send className="h-4 w-4" /></Button>
+                    </form>
+                </div>
+            </div>
+        </Card>
     );
 }

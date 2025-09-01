@@ -24,11 +24,11 @@ function DashboardHeader() {
             <span className="sr-only">Toggle Menu</span>
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="sm:max-w-xs p-0">
+        <SheetContent side="left" className="sm:max-w-xs">
           <SheetHeader className="sr-only">
              <SheetTitle>Sidebar Menu</SheetTitle>
           </SheetHeader>
-          <div className="flex h-full max-h-screen flex-col">
+          <div className="-mx-6">
             <Sidebar />
           </div>
         </SheetContent>
